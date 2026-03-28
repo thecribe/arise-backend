@@ -366,8 +366,18 @@ export const userLogout = async (req, res) => {
       },
     );
 
-    res.clearCookie("accessToken");
-    res.clearCookie("refreshToken");
+    res.cookie("accessToken", accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      maxAge: 0, // 1 hour
+    });
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      maxAge: 0, // 1 hour
+    });
 
     return res.status(200).json({ message: "User logged out successfully" });
   } catch (error) {
