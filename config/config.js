@@ -1,7 +1,3 @@
-if (process.env.NODE_ENV !== "production") {
-  const dotenv = await import("dotenv");
-  dotenv.config();
-} // automatically loads .env
 import mysql2 from "mysql2";
 
 const config = {
