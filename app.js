@@ -20,7 +20,7 @@ const app = express();
 const allowedOrigins = [
   "http://localhost:3000",
   "https://arise.cribe.org",
-  "https://recruitment-one-swart.vercel.app",
+  "https://recruitment-z73p.vercel.app",
 ];
 
 app.use(express.json());
