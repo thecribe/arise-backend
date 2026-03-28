@@ -366,13 +366,13 @@ export const userLogout = async (req, res) => {
       },
     );
 
-    res.cookie("accessToken", accessToken, {
+    res.cookie("accessToken", "", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       maxAge: 0, // 1 hour
     });
-    res.cookie("refreshToken", refreshToken, {
+    res.cookie("refreshToken", "", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
