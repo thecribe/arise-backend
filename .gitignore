@@ -10,3 +10,5 @@
 !.yarn/releases
 !.yarn/versions
 
+
+.env

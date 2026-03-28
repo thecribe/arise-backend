@@ -99,7 +99,6 @@ export const emailAuth = async (req, res) => {
 export const refreshToken = async (req, res) => {
   const { refreshToken } = req.cookies;
 
-  console.log(refreshToken);
   if (!refreshToken) {
     return res.status(401).json({ message: "REFRESH_TOKEN_MISSING" });
   }
@@ -139,7 +138,7 @@ export const refreshToken = async (req, res) => {
       res.cookie("accessToken", newAccessToken, {
         httpOnly: true,
         secure: false,
-        sameSite: "lax",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
         maxAge: 60 * 60 * 1000, // 1 hour
       });
       return res
@@ -151,7 +150,11 @@ export const refreshToken = async (req, res) => {
         .json({ message: "Unauthorized: Invalid refresh token" });
     }
   } else {
-    console.log({ decodedRefreshToken });
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    });
     return res
       .status(404)
       .json({ message: "Unauthorized: Invalid refresh token" });
@@ -244,7 +247,7 @@ export const credentialAuth = async (req, res) => {
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     });
 
@@ -258,7 +261,7 @@ export const credentialAuth = async (req, res) => {
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       maxAge: 60 * 60 * 1000, // 1 hour
     });
 
@@ -326,7 +329,7 @@ export const userEmailLogin = async (req, res) => {
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     });
 
@@ -340,13 +343,12 @@ export const userEmailLogin = async (req, res) => {
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       maxAge: 60 * 60 * 1000, // 1 hour
     });
 
     return res.status(200).json({ message: "User logged in successfully" });
   } catch (error) {
-    console.error("Error in userEmailLogin:", error);
     return res.status(500).json({ message: "Internal Server Error" });
   }
 };

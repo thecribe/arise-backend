@@ -13,14 +13,18 @@ export const authMiddleware = async (req, res, next) => {
       req.user = decodedAccessToken.payload;
       return next();
     } else {
-      return res.status(401).json({
-        message: decodedAccessToken.expired
-          ? "ACCESS_TOKEN_EXPIRED"
-          : "Verification link is invalid.",
-      });
+      if (decodedAccessToken.expired) {
+        return res.status(403).json({
+          message: "ACCESS_TOKEN_EXPIRED",
+        });
+      } else {
+        return res.status(401).json({
+          message: "Verification link is invalid.",
+        });
+      }
     }
   } else if (!accessToken && refreshToken) {
-    return res.status(401).json({ message: "ACCESS_TOKEN_MISSING" });
+    return res.status(403).json({ message: "ACCESS_TOKEN_MISSING" });
   } else {
     return res.status(401).json({ message: "UNAUTHORIZED" });
   }

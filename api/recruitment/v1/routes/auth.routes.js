@@ -15,7 +15,7 @@ const router = express.Router();
 router.post("/auth/email", verifyRecaptcha, emailAuth);
 router.post("/auth/credential", verifyRecaptcha, credentialAuth);
 router.post("/auth/refresh-token", refreshToken);
-router.get("/auth/session", getUserSession);
+router.get("/auth/session", authMiddleware, getUserSession);
 
 //LOGIN AUTHETICATION WITH EMAIL AND TOKEN
 router.get("/auth/verify-email", userEmailLogin);

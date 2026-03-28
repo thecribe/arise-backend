@@ -6,9 +6,14 @@ if (!process.env.RESEND_API_KEY) {
   throw new Error("RESEND_API_KEY is missing");
 }
 
+if (!process.env.FRONTENDURL) {
+  throw new Error("Domain is missing");
+}
+
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const sendEmailVerification = async (payload) => {
+  const link = `${process.env.FRONTENDURL}/verify-email?token=${payload.verificationToken}`;
   let response;
   try {
     response = await resend.emails.send({
@@ -16,7 +21,7 @@ export const sendEmailVerification = async (payload) => {
       to: payload.email,
       subject: "Email Verification",
       // react: EmailComponent({ user: payload }),
-      html: `<p>Hello ${payload?.firstName},</p><p>Please click the link below to verify your email:</p><a href="http://localhost:3000/verify-email?token=${payload.verificationToken}">Verify Email</a>`,
+      html: `<p>Hello ${payload?.firstName},</p><p>Please click the link below to verify your email:</p><a href=${link}>Verify Email</a>`,
     });
   } catch (error) {
     return { error: "Failed to send email" };
@@ -25,7 +30,7 @@ export const sendEmailVerification = async (payload) => {
 };
 
 export const sendAuthenticationLink = async (payload) => {
-  const authLink = `http://localhost:3000/authenticate?token=${payload.authenticationToken}`;
+  const authLink = `${process.env.FRONTENDURL}/authenticate?token=${payload.authenticationToken}`;
   let response;
   try {
     response = await resend.emails.send({
@@ -45,7 +50,7 @@ export const sendAuthenticationLink = async (payload) => {
 };
 
 export const sendResetPasswordLink = async (payload) => {
-  const resetLink = `http://localhost:3000/reset-password?token=${payload.resetToken}`;
+  const resetLink = `${process.env.FRONTENDURL}/reset-password?token=${payload.resetToken}`;
   let response;
   try {
     response = await resend.emails.send({
@@ -68,7 +73,6 @@ export const sendResetPasswordLink = async (payload) => {
       }),
     });
   } catch (error) {
-    console.error("Error sending reset password link email:", error);
     return { error: "Failed to send reset password link email" };
   }
 

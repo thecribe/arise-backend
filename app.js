@@ -17,13 +17,28 @@ import path from "path";
 
 const app = express();
 
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://arise.cribe.org",
+  "https://recruitment-one-swart.vercel.app",
+];
+
 app.use(express.json());
 app.use(
   cors({
-    origin: "http://localhost:3000", // your React dev server
+    origin: function (origin, callback) {
+      // allow requests with no origin (like Postman)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      } else {
+        return callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
   }),
-); // allow cookies to be sent}))
+);
 app.use(cookieParser());
 
 const API_BASE_ROUTE = "/api/recruitment/v1";
