@@ -1,14 +1,18 @@
 import fs from "fs";
 import path from "path";
 import Sequelize from "sequelize";
-import dotenv from "dotenv";
-import { fileURLToPath, pathToFileURL } from "url";
 
-dotenv.config();
+import { fileURLToPath, pathToFileURL } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const basename = path.basename(__filename);
+
+if (process.env.NODE_ENV !== "production") {
+  const dotenv = await import("dotenv");
+  dotenv.config();
+}
+
 const env = process.env.NODE_ENV || "development";
 
 import configFile from "../config/config.js";
