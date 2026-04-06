@@ -12,6 +12,14 @@ const config = {
     port: process.env.DB_PORT || 3306,
     dialect: "mysql",
     dialectModule: mysql2,
+    pool: {
+      max: 5, // Keep this LOW on shared hosting (3–8 is safe)
+      min: 0,
+      acquire: 30000, // Max time to wait for a connection
+      idle: 10000, // Close idle connections after 10 seconds
+    },
+
+    logging: false,
   },
 
   test: {
@@ -31,6 +39,14 @@ const config = {
     port: process.env.DB_PORT || 3306,
     dialect: "mysql",
     dialectModule: mysql2,
+    pool: {
+      max: 5, // Keep this LOW on shared hosting (3–8 is safe)
+      min: 0,
+      acquire: 30000, // Max time to wait for a connection
+      idle: 10000, // Close idle connections after 10 seconds
+    },
+
+    logging: false,
   },
 };
 

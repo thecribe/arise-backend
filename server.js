@@ -17,6 +17,6 @@ const PORT = process.env.PORT || 5000;
     // monitorDbConnection();
   } catch (error) {
     console.error("DB error:", error);
-    throw error;
+    process.exit(1);
   }
 })();
