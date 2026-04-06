@@ -1,9 +1,9 @@
 import { Resend } from "resend";
 import { authEmailTemplate } from "./authEmailTemplate.js";
 import { resetPasswordTemplate } from "./generalTemplate.js";
-import dotenv from "dotenv";
+// import dotenv from "dotenv";
 
-dotenv.config({ path: ".env" });
+// dotenv.config({ path: ".env" });
 if (!process.env.RESEND_API_KEY) {
   throw new Error("RESEND_API_KEY is missing");
 }
