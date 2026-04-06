@@ -12,6 +12,8 @@ import {
 import { verifyRecaptcha } from "../middleware/recaptcha.middleware.js";
 import { authMiddleware } from "../middleware/auth.middleware.js";
 import { authorizeRoles } from "../middleware/role.middleware.js";
+import { upload } from "../utils/multerHandler.js";
+import { generalUploadHandler } from "../controllers/fileUpload.controller.js";
 
 const router = express.Router();
 
@@ -25,7 +27,13 @@ router.post("/users", verifyRecaptcha, addUser);
 
 //SINGLE USER
 router.get("/users/:userId", authMiddleware, getSingleUser);
-router.put("/users/:userId", authMiddleware, editSingleUser);
+router.put(
+  "/users/:userId",
+  authMiddleware,
+  upload.any(),
+  generalUploadHandler,
+  editSingleUser,
+);
 router.put(
   "/users/:userId/change-role",
   authMiddleware,

@@ -15,8 +15,6 @@ export const updateSiteLogo = async (req, res) => {
   const uploadedFiles = req.uploadedFiles;
   const { id } = req.params;
 
-  console.log({ uploadedFiles });
-
   const payload = {
     site_logo: mergeUploadFilestoJson("[]", uploadedFiles.site_logo),
   };

@@ -1,4 +1,4 @@
-import { Op, where } from "sequelize";
+import { Op } from "sequelize";
 import db from "../../../../models/index.js";
 import {
   getCompletionPercentage,
@@ -74,10 +74,13 @@ export const uploadUserCertificate = async (req, res) => {
         userId,
       },
     });
-    if (findOneCert.audit_status) {
-      return res.status(400).json({
-        message: `Error uploading ${payload.name}. Training already audited`,
-      });
+
+    if (findOneCert) {
+      if (findOneCert.audit_status) {
+        return res.status(400).json({
+          message: `Error uploading ${payload.name}. Training already audited`,
+        });
+      }
     }
 
     const percentage = getCompletionPercentage(payload);

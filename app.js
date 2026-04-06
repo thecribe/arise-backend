@@ -11,6 +11,7 @@ import departmentRoutes from "./api/recruitment/v1/routes/department.routes.js";
 import completionRateRoutes from "./api/recruitment/v1/routes/completionRate.routes.js";
 import emailRoutes from "./api/recruitment/v1/routes/email.routes.js";
 import authRoutes from "./api/recruitment/v1/routes/auth.routes.js";
+import analyticsRoutes from "./api/recruitment/v1/routes/analytics.routes.js";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import path from "path";
@@ -53,6 +54,8 @@ app.use(
   }),
 );
 
+//ANALYTICS ROUTE
+app.use(API_BASE_ROUTE, analyticsRoutes);
 //AUTH ROUTES
 app.use(API_BASE_ROUTE, authRoutes);
 

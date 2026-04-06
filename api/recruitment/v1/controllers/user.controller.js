@@ -3,6 +3,7 @@ import db from "../../../../models/index.js";
 import bcrypt from "bcryptjs";
 import { createToken, verifyToken } from "../utils/tokens.js";
 import { sendEmailVerification } from "../email/emailHandler.js";
+import { mergeUploadFilestoJson } from "../utils/generalUtils.js";
 
 export const getUsers = async (req, res) => {
   const { limit, offset, department, job_type, type } = req.query;
@@ -155,6 +156,7 @@ export const getSingleUser = async (req, res) => {
 };
 export const editSingleUser = async (req, res) => {
   const body = req.body;
+  const uploadedFiles = req.uploadedFiles;
   const { userId } = req.params;
 
   if (!userId) {
@@ -167,15 +169,37 @@ export const editSingleUser = async (req, res) => {
       .json({ message: "Error: Please send data to update user" });
   }
 
+  let payload = Object.fromEntries(
+    Object.entries(body).map(([key, value]) => {
+      if (typeof value === "string") {
+        value = value.trim();
+      }
+
+      if (key === "email" && typeof value === "string") {
+        value = value.toLowerCase();
+      }
+
+      return [key, value];
+    }),
+  );
+
+  if (uploadedFiles?.profileImage) {
+    payload.profileImage = mergeUploadFilestoJson(
+      "[]",
+      uploadedFiles.profileImage,
+    );
+  }
+
   try {
     const response = await db.User.update(
-      { ...body },
+      { ...payload },
       { where: { id: userId } },
     );
     return res
       .status(200)
       .json({ data: response, message: "User updated successfully" });
   } catch (error) {
+    console.log(error);
     return res
       .status(500)
       .json({ message: "Internal Server Error" }, { status: 500 });

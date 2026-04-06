@@ -1,8 +1,9 @@
-//SINGLE USER COMPLETION RATE
+// SINGLE USER COMPLETION RATE - FIXED & OPTIMIZED
 
 import { Op } from "sequelize";
 import db from "../../../../models/index.js";
 
+// All tables with their model and key
 const tables = [
   { model: "PersonalInfo", key: "personal_info" },
   { model: "Address", key: "address_details" },
@@ -29,6 +30,27 @@ const tables = [
   { model: "Rehabilitation", key: "rehabilitation" },
 ];
 
+// Reusable helper function
+const getFormData = async (userId, model) => {
+  const records = await db[model].findAll({
+    where: { userId },
+    attributes: ["completion_rate"],
+    raw: true,
+  });
+
+  if (records.length === 0) {
+    return { average: 0, sum: 0, count: 0 };
+  }
+
+  const sum = records.reduce(
+    (acc, r) => acc + Number(r.completion_rate || 0),
+    0,
+  );
+  const average = Number((sum / records.length).toFixed(1));
+
+  return { average, sum, count: records.length };
+};
+
 export const getSingleUserCompletionRate = async (req, res) => {
   const { userId } = req.params;
 
@@ -37,79 +59,65 @@ export const getSingleUserCompletionRate = async (req, res) => {
   }
 
   try {
-    const results = await Promise.all(
-      tables.map(async ({ model }) => {
-        const records = await db[model].findAll({
-          where: { userId },
-          attributes: ["completion_rate"],
-          raw: true,
-        });
-
-        const score =
-          records.length > 0
-            ? Number(
-                (
-                  records.reduce(
-                    (sum, r) => sum + Number(r.completion_rate || 0),
-                    0,
-                  ) / records.length
-                ).toFixed(1),
-              )
-            : 0;
-
-        return score;
-      }),
+    // Get completion rate for all main forms
+    const formData = await Promise.all(
+      tables.map(({ model }) => getFormData(userId, model)),
     );
 
-    const screeningRate =
-      results.length > 0
-        ? Number(
-            (results.reduce((sum, s) => sum + s, 0) / results.length).toFixed(
-              1,
-            ),
-          )
-        : 0;
+    const totalSum = formData.reduce((acc, f) => acc + f.sum, 0);
+    const totalRecords = formData.reduce((acc, f) => acc + f.count, 0);
 
-    // Reference rate
-    const referenceRate =
-      (
-        await db.Reference.findOne({
-          attributes: [
-            [
-              db.sequelize.fn("AVG", db.sequelize.col("completion_rate")),
-              "referenceRate",
-            ],
-          ],
-          where: { userId },
-          raw: true,
-        })
-      )?.referenceRate || 0;
+    const trueOverallRate =
+      totalRecords > 0 ? Number((totalSum / totalRecords).toFixed(1)) : 0;
 
-    // Training rate
-    const trainingRate =
-      (
-        await db.ApplicantsCertificates.findOne({
-          attributes: [
-            [
-              db.sequelize.fn("AVG", db.sequelize.col("completion_rate")),
-              "trainingRate",
-            ],
-          ],
-          where: {
-            userId,
-            mandatory_certificateId: { [Op.ne]: null },
-          },
-          raw: true,
-        })
-      )?.trainingRate || 0;
+    const screeningRate = trueOverallRate;
+
+    // Reference Rate
+    const referenceData = await db.Reference.findOne({
+      attributes: [
+        [
+          db.sequelize.fn("AVG", db.sequelize.col("completion_rate")),
+          "referenceRate",
+        ],
+      ],
+      where: { userId },
+      raw: true,
+    });
+
+    const referenceRate = referenceData?.referenceRate
+      ? Number(Number(referenceData.referenceRate).toFixed(1))
+      : 0;
+
+    // Training Rate (Mandatory Certificates)
+    const trainingData = await db.ApplicantsCertificates.findOne({
+      attributes: [
+        [
+          db.sequelize.fn("AVG", db.sequelize.col("completion_rate")),
+          "trainingRate",
+        ],
+      ],
+      where: {
+        userId,
+        mandatory_certificateId: { [Op.ne]: null },
+      },
+      raw: true,
+    });
+
+    const trainingRate = trainingData?.trainingRate
+      ? Number(Number(trainingData.trainingRate).toFixed(1))
+      : 0;
 
     return res.status(200).json({
       screeningRate,
-      referenceRate: Number(referenceRate).toFixed(1),
-      trainingRate: Number(trainingRate).toFixed(1),
+      referenceRate,
+      trainingRate,
+      totalForms: tables.length,
     });
   } catch (error) {
-    return res.status(500).json({ message: "Error retrieving details" });
+    console.error("Error in getSingleUserCompletionRate:", error);
+    return res
+      .status(500)
+      .json({ message: "Error retrieving completion rate" });
   }
 };
 
@@ -123,32 +131,70 @@ export const getFormCompletionRate = async (req, res) => {
   try {
     const results = await Promise.all(
       tables.map(async ({ model, key }) => {
-        const records = await db[model].findAll({
-          where: { userId },
-          attributes: ["completion_rate"],
-          raw: true,
-        });
-
-        const completionRate =
-          records.length > 0
-            ? Number(
-                (
-                  records.reduce(
-                    (sum, r) => sum + Number(r.completion_rate),
-                    0,
-                  ) / records.length
-                ).toFixed(1),
-              )
-            : 0;
-
-        return { [key]: completionRate };
+        const progress = await getFormCompletion(userId, model);
+        return { [key]: progress };
       }),
     );
 
     const completionRates = Object.assign({}, ...results);
 
-    return res.status(200).json({ completionRates });
+    // Also return section-wise summary (optional but very useful)
+    const personalDetails = [
+      "personal_info",
+      "address_details",
+      "passport_photo",
+      "resume",
+      "contact",
+      "emergency_contact",
+    ];
+    const workHistory = ["current_job", "previous_job"];
+    const education = ["educational_qualification"];
+    const professional = [
+      "right_to_work",
+      "professional_memberships",
+      "bank_payment_details",
+      "immunisations",
+      "driving_details",
+    ];
+    const declarations = [
+      "health_declarations",
+      "disability_discrimination_act",
+      "confidentiality",
+      "consent",
+      "personal_declarations",
+      "working_time",
+      "other_declarations",
+      "health_and_safety",
+      "rehabilitation",
+    ];
+
+    const calculateSectionAverage = (keys) => {
+      const values = keys.map((key) => completionRates[key] || 0);
+      return values.length > 0
+        ? Number((values.reduce((a, b) => a + b, 0) / values.length).toFixed(1))
+        : 0;
+    };
+
+    return res.status(200).json({
+      completionRates,
+      sections: {
+        personal_details: calculateSectionAverage(personalDetails),
+        work_history: calculateSectionAverage(workHistory),
+        education_and_qualifications: calculateSectionAverage(education),
+        professional_details: calculateSectionAverage(professional),
+        declarations: calculateSectionAverage(declarations),
+      },
+      overall: Number(
+        (
+          Object.values(completionRates).reduce((a, b) => a + b, 0) /
+          tables.length
+        ).toFixed(1),
+      ),
+    });
   } catch (error) {
-    return res.status(500).json({ message: "Error retrieving details" });
+    console.error("Error in getFormCompletionRate:", error);
+    return res
+      .status(500)
+      .json({ message: "Error retrieving form completion rates" });
   }
 };

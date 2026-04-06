@@ -14,7 +14,7 @@ const PORT = process.env.PORT || 5000;
       console.log(`Server running on port ${PORT}`);
     });
 
-    monitorDbConnection();
+    // monitorDbConnection();
   } catch (error) {
     console.error("DB error:", error);
     throw error;
