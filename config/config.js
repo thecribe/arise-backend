@@ -1,13 +1,13 @@
 import mysql2 from "mysql2";
-import dotenv from "dotenv";
+// import dotenv from "dotenv";
 
-dotenv.config({ path: ".env" });
+// dotenv.config({ path: ".env" });
 
 const config = {
   development: {
     username: process.env.DB_USER || "root",
     password: process.env.DB_PASSWORD || "",
-    database: process.env.DB_NAME || "database_development",
+    database: process.env.DB_NAME || "recruitment",
     host: process.env.DB_HOST || "127.0.0.1",
     port: process.env.DB_PORT || 3306,
     dialect: "mysql",
@@ -17,7 +17,7 @@ const config = {
   test: {
     username: process.env.DB_USER || "root",
     password: process.env.DB_PASSWORD || "",
-    database: process.env.DB_NAME_TEST || "database_test",
+    database: process.env.DB_NAME_TEST || "recruitment",
     host: process.env.DB_HOST || "127.0.0.1",
     port: process.env.DB_PORT || 3306,
     dialect: "mysql",
@@ -26,7 +26,7 @@ const config = {
   production: {
     username: process.env.DB_USER || "root",
     password: process.env.DB_PASSWORD || "",
-    database: process.env.DB_NAME || "database_development",
+    database: process.env.DB_NAME || "recruitment",
     host: process.env.DB_HOST || "127.0.0.1",
     port: process.env.DB_PORT || 3306,
     dialect: "mysql",
