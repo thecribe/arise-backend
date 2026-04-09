@@ -16,13 +16,19 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import path from "path";
 
+import { fileURLToPath } from "url";
+
 const app = express();
 
 const allowedOrigins = [
   "http://localhost:3000",
   "https://arise.cribe.org",
   "https://recruitment-z73p.vercel.app",
+  "http://localhost:5000",
 ];
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 app.use(express.json());
 app.use(
@@ -38,6 +44,8 @@ app.use(
       }
     },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
   }),
 );
 app.use(cookieParser());
@@ -86,5 +94,34 @@ app.use(API_BASE_ROUTE, completionRateRoutes);
 
 //Email Route
 app.use(API_BASE_ROUTE, emailRoutes);
+
+// ====================== STATIC FILES ======================
+
+// Backend static files (uploads, images, etc.)
+app.use(
+  "/static",
+  express.static(path.join(__dirname, "public/static"), {
+    setHeaders(res) {
+      res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+    },
+  }),
+);
+
+// ====================== SERVE VITE REACT BUILD ======================
+const distPath = path.join(__dirname, "dist");
+
+// Serve React production build
+app.use(
+  express.static(distPath, {
+    setHeaders(res) {
+      res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+    },
+  }),
+);
+
+// Catch-all route - Required for React Router (deep links, refresh, etc.)
+app.get("/{*path}", (req, res) => {
+  res.sendFile(path.join(distPath, "index.html"));
+});
 
 export default app;
