@@ -3,10 +3,10 @@ import { authEmailTemplate } from "./authEmailTemplate.js";
 import { resetPasswordTemplate } from "./generalTemplate.js";
 
 // 👇 Load dotenv ONLY in development
-if (process.env.NODE_ENV !== "production") {
-  const dotenv = await import("dotenv");
-  dotenv.config({ path: ".env" });
-}
+// if (process.env.NODE_ENV !== "production") {
+//   const dotenv = await import("dotenv");
+//   dotenv.config({ path: ".env" });
+// }
 if (!process.env.RESEND_API_KEY) {
   throw new Error("RESEND_API_KEY is missing");
 }

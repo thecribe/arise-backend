@@ -25,6 +25,7 @@ const allowedOrigins = [
   "https://arise.cribe.org",
   "https://recruitment-z73p.vercel.app",
   "http://localhost:5000",
+  "https://developer.cribe.org",
 ];
 
 const __filename = fileURLToPath(import.meta.url);
