@@ -1,13 +1,12 @@
-// import { sequelize } from "./config/database.js";
-
 import app from "./app.js";
 import db, { initDb, monitorDbConnection } from "./models/index.js";
 
 const PORT = process.env.PORT || 5000;
 
-(async () => {
+async function startServer() {
   try {
     await initDb();
+
     console.log("DB connected");
 
     app.listen(PORT, () => {
@@ -19,4 +18,6 @@ const PORT = process.env.PORT || 5000;
     console.error("DB error:", error);
     process.exit(1);
   }
-})();
+}
+
+startServer();
