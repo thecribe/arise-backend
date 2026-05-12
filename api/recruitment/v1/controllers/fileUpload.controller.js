@@ -78,7 +78,11 @@ export const screeningUploadHandler = async (req, res, next) => {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
 
-    const domain = `${req.protocol}://${req.get("host")}`;
+    // const domain = `${req.protocol}://${req.get("host")}`;
+
+    const protocol = req.headers["x-forwarded-proto"] || "https";
+
+    const domain = `${protocol}://${req.get("host")}`;
     const uploaded = {};
 
     for (const file of files) {
