@@ -62,7 +62,7 @@ export const initDb = async (retries = 5, delay = 5000) => {
       console.log("Attempting DB connection...");
       await sequelize.authenticate();
 
-      await sequelize.sync({ alter: true }); // Sync models to DB (use with caution in production)
+      // await sequelize.sync({ alter: true }); // Sync models to DB (use with caution in production)
       console.log("✅ Database connected successfully");
       return db; // Return db object for convenience
     } catch (error) {
