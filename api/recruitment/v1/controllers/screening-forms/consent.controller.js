@@ -28,10 +28,7 @@ export const uploadConsent = async (req, res) => {
       where: { userId },
     });
     const payload = {
-      signature: mergeUploadFilestoJson(
-        check ? check.signature : "[]",
-        uploadedFiles.signature,
-      ),
+      signature: JSON.stringify(uploadedFiles.signature),
       date: body.date,
     };
 

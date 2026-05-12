@@ -72,10 +72,7 @@ export const uploadImmunisation = async (req, res) => {
             check.hiv_certificate,
             uploadedFiles.hiv_certificate,
           ),
-          signature: mergeUploadFilestoJson(
-            check.signature,
-            uploadedFiles.signature,
-          ),
+          signature: JSON.stringify(uploadedFiles.signature),
           date: body.date,
         };
 

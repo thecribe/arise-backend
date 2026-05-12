@@ -2,6 +2,7 @@
 
 import { Op } from "sequelize";
 import db from "../../../../models/index.js";
+import { getSectionProgress } from "../utils/analyticsHelper.js";
 
 // All tables with their model and key
 const tables = [
@@ -29,6 +30,42 @@ const tables = [
   { model: "HealthAndSafety", key: "health_and_safety" },
   { model: "Rehabilitation", key: "rehabilitation" },
 ];
+
+export const getSingleUserScreeningCompletionRate = async (req, res) => {
+  const { userId } = req.params;
+
+  if (!userId) {
+    return res.status(400).json({ message: "Missing applicant id" });
+  }
+
+  try {
+    const completionRateObject = Object.fromEntries(
+      await Promise.all(
+        tables.map(async ({ model, key }) => {
+          const Model = db[model];
+
+          if (!Model) return [key, 0];
+
+          const result = await Model.findOne({
+            where: { userId },
+            order: [["createdAt", "ASC"]],
+            attributes: ["completion_rate"],
+            raw: true,
+          });
+
+          return [key, result?.completion_rate ?? 0];
+        }),
+      ),
+    );
+
+    return res.status(200).json(completionRateObject);
+  } catch (error) {
+    console.error("Error in getSingleUserScreeningCompletionRate:", error);
+    return res
+      .status(500)
+      .json({ message: "Error retrieving screening completion rate" });
+  }
+};
 
 // Reusable helper function
 const getFormData = async (userId, model) => {

@@ -38,7 +38,7 @@ export default (sequelize, DataTypes) => {
       // Country of origin or residence
       token: {
         allowNull: false,
-        type: DataTypes.STRING,
+        type: DataTypes.STRING(512),
       },
       revokedAt: {
         type: DataTypes.DATE,

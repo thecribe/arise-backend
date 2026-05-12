@@ -27,12 +27,14 @@ export const uploadHealthDeclaration = async (req, res) => {
     const check = await db.HealthDeclaration.findOne({
       where: { userId },
     });
+
     const payload = {
       name: body.name,
-      signature: mergeUploadFilestoJson(
-        check ? check.signature : "[]",
-        uploadedFiles.signature,
-      ),
+      // signature: mergeUploadFilestoJson(
+      //   check ? check.signature : "[]",
+      //   uploadedFiles.signature,
+      // ),
+      signature: JSON.stringify(uploadedFiles.signature),
       date: body.date,
     };
 

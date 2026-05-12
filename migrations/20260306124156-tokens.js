@@ -18,7 +18,7 @@ export async function up(queryInterface, Sequelize) {
       defaultValue: Sequelize.UUIDV4,
     },
     token: {
-      type: Sequelize.STRING,
+      type: Sequelize.STRING(512),
       allowNull: false,
     },
     revokedAt: {

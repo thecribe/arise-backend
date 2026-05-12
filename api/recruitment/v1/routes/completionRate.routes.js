@@ -3,6 +3,7 @@ import express from "express";
 import {
   getFormCompletionRate,
   getSingleUserCompletionRate,
+  getSingleUserScreeningCompletionRate,
 } from "../controllers/completionRate.controller.js";
 import { authMiddleware } from "../middleware/auth.middleware.js";
 
@@ -19,4 +20,9 @@ router.get(
   getFormCompletionRate,
 );
 
+router.get(
+  "/completion-rate/screening/:userId",
+  authMiddleware,
+  getSingleUserScreeningCompletionRate,
+);
 export default router;

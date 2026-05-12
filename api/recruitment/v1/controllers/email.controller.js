@@ -1,7 +1,11 @@
 import { type } from "node:os";
 import db from "../../../../models/index.js";
 import { createToken, verifyToken } from "../utils/tokens.js";
-import { sendResetPasswordLink } from "../email/emailHandler.js";
+import {
+  sendRefereeEmail,
+  sendResetPasswordLink,
+} from "../email/emailHandler.js";
+import bcrypt from "bcryptjs";
 
 export const sendEmail = async (req, res) => {
   const { email, payload } = req.body;
@@ -80,6 +84,7 @@ export const userResetPasswordEmail = async (req, res) => {
       {
         where: {
           userId: user.id,
+          type: "password_reset",
           revokedAt: null,
         },
         transaction: t,
@@ -118,6 +123,89 @@ export const userResetPasswordEmail = async (req, res) => {
   } catch (error) {
     await t.rollback();
     console.error("Error in userResetPasswordEmail:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const sendReferenceEmail = async (req, res) => {
+  const { referenceId } = req.params;
+
+  if (!referenceId) {
+    return res.status(400).json({ message: "Reference ID is required" });
+  }
+
+  try {
+    const reference = await db.Reference.findOne({
+      where: { id: referenceId },
+    });
+
+    if (!reference) {
+      return res.status(400).json({ message: "Invalid reference ID" });
+    }
+
+    const getUser = await db.User.findOne({
+      where: { id: reference.userId },
+      attributes: ["firstName", "lastName"],
+    });
+
+    if (!getUser) {
+      return res.status(400).json({ message: "Invalid user ID" });
+    }
+
+    const updateReferencetoken = await db.Token.update(
+      { revokedAt: new Date() },
+      {
+        where: {
+          userId: reference.userId,
+          type: "reference",
+          revokedAt: null,
+        },
+      },
+    );
+
+    //CREATE TOKEN FOR REFERENCE
+    const refereeToken = createToken(
+      { referenceId, userId: reference.userId },
+      "30d",
+    );
+
+    await db.Token.create({
+      token: refereeToken,
+      userId: reference.userId,
+      type: "reference",
+    });
+
+    const mailresponse = await sendRefereeEmail({
+      applicantName: `${getUser.firstName} ${getUser.lastName}`,
+      email: reference.referee_email,
+      refereeToken: refereeToken,
+      yourFullName: "Arise Nursing Recruitment Team",
+    });
+    if (mailresponse.error) {
+      return res
+        .status(500)
+        .json({ message: "Failed to send reference email" });
+    }
+
+    const mailStatus = await db.ReferenceMailStatus.findOne({
+      where: { referenceId },
+    });
+
+    if (mailStatus) {
+      await db.ReferenceMailStatus.update(
+        { status: "pending" },
+        { where: { referenceId } },
+      );
+    } else {
+      await db.ReferenceMailStatus.create({ status: "pending", referenceId });
+    }
+
+    res.status(200).json({
+      status: true,
+      message: "Reference email sent successfully",
+    });
+  } catch (error) {
+    console.error("Error in sendReferenceEmail:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };

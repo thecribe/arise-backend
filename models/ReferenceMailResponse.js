@@ -6,51 +6,58 @@ export default (sequelize, DataTypes) => {
     static associate(models) {
       // Each Confidentility record belongs to exactly one User
       // `userId` is the foreign key in this table
-      ReferenceMailResponse.belongsTo(models.User, {
-        foreignKey: "userId", // Column in forms_personal_info
-        targetKey: "id",
-        as: "user", // Column in users table
-      });
+
       ReferenceMailResponse.belongsTo(models.Reference, {
         foreignKey: "referenceId", // Column in forms_personal_info
         targetKey: "id",
-        as: "reference_id", // Column in users table
+        as: "reference_details", // Column in users table
+        onDelete: "CASCADE",
+        onUpdate: "CASCADE",
       });
     }
   }
   ReferenceMailResponse.init(
     {
       id: {
-        allowNull: false,
+        type: DataTypes.INTEGER,
+        autoIncrement: true,
         primaryKey: true,
-        type: DataTypes.INTEGER.UNSIGNED, // Positive integer only
-        autoIncrement: true, // Auto-increment value
       },
-      response: {
-        allowNull: false,
-        type: DataTypes.DATEONLY,
-      },
-      sent: {
-        allowNull: false,
-        type: DataTypes.DATEONLY,
-      },
-      rejected: {
-        allowNull: false,
-        type: DataTypes.DATEONLY,
-      },
+
       referenceId: {
-        type: DataTypes.UUID, // UUID from User table
-        unique: true, // One-to-one relationship
+        type: DataTypes.UUID,
+        allowNull: false,
       },
-      userId: {
-        type: DataTypes.UUID, // UUID from User table
-        unique: true, // One-to-one relationship
+
+      reEmploy: {
+        type: DataTypes.ENUM("Yes", "No"),
+        allowNull: false,
+      },
+
+      ratings: {
+        type: DataTypes.JSON,
+        allowNull: true,
+      },
+
+      detailReference: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
+
+      refererName: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+
+      refererSignature: {
+        type: DataTypes.STRING,
+        allowNull: true,
       },
     },
     {
       sequelize,
       modelName: "ReferenceMailResponse",
-      tableName: "forms_reference_mail_response",
+      tableName: "reference_mail_responses",
       timestamps: true,
     },
   );

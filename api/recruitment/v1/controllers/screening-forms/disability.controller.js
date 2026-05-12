@@ -29,10 +29,7 @@ export const uploadDisability = async (req, res) => {
     });
     const payload = {
       disability: body.disability,
-      signature: mergeUploadFilestoJson(
-        check ? check.signature : "[]",
-        uploadedFiles.signature,
-      ),
+      signature: JSON.stringify(uploadedFiles.signature),
       date: body.date,
     };
 

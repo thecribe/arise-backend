@@ -1,3 +1,6 @@
+// Your controller (e.g. userProgressController.js)
+
+import db from "../../../../models/index.js";
 import { getSectionProgress } from "../utils/analyticsHelper.js";
 
 const personalDetailsList = [
@@ -37,7 +40,6 @@ const declarationsList = [
   { model: "HealthAndSafety", key: "health_and_safety" },
   { model: "Rehabilitation", key: "rehabilitation" },
 ];
-
 export const getUserAllFormProgress = async (req, res) => {
   const { userId } = req.params;
 
@@ -53,11 +55,11 @@ export const getUserAllFormProgress = async (req, res) => {
       professionalSection,
       declarationsSection,
     ] = await Promise.all([
-      getSectionProgress(userId, personalDetailsList),
-      getSectionProgress(userId, workHistoryList),
-      getSectionProgress(userId, educationAndQualificationsList),
-      getSectionProgress(userId, professionalMembershipsList),
-      getSectionProgress(userId, declarationsList),
+      getSectionProgress(userId, personalDetailsList, db),
+      getSectionProgress(userId, workHistoryList, db),
+      getSectionProgress(userId, educationAndQualificationsList, db),
+      getSectionProgress(userId, professionalMembershipsList, db),
+      getSectionProgress(userId, declarationsList, db),
     ]);
 
     const overallProgress =
@@ -100,6 +102,69 @@ export const getUserAllFormProgress = async (req, res) => {
     return res.status(200).json({ data: response });
   } catch (error) {
     console.error("Error fetching user form progress:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const getUserComplianceStatus = async (req, res) => {
+  const { userId } = req.params;
+
+  if (!userId) {
+    return res.status(400).json({ message: "Missing applicant id" });
+  }
+
+  // const getFormEntry = async (userId, section, db) => {
+  //   section.map(({ model, key }) => {});
+  // };
+
+  const allforms = [
+    ...personalDetailsList,
+    ...workHistoryList,
+    ...educationAndQualificationsList,
+    ...professionalMembershipsList,
+    ...declarationsList,
+  ];
+  try {
+    const formentries = await Promise.all([
+      ...allforms.map(async ({ model, key }) => {
+        const Model = db[model];
+        if (["educational_qualification", "previous_job"].includes(key)) {
+          const entry = await Model.findAll({
+            where: { userId },
+            include: {
+              all: true,
+              // nested: true,
+              attributes: { exclude: ["password", "emailVerified"] },
+            },
+          });
+          return { key, entry };
+        } else {
+          const entry = await Model.findOne({
+            where: { userId },
+            include: {
+              all: true,
+              // nested: true,
+              attributes: { exclude: ["password", "emailVerified"] },
+            },
+          });
+          return { key, entry };
+        }
+      }),
+    ]);
+
+    const objEntries = {};
+    formentries.forEach(({ key, entry }) => {
+      objEntries[key] = entry;
+    });
+
+    const reference = await db.Reference.findAll({
+      where: { userId },
+      include: [{ model: db.ReferenceMailStatus, as: "mail_status" }],
+    });
+
+    return res.status(200).json({ references: reference, ...objEntries });
+  } catch (error) {
+    console.error("Error fetching form entries:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };

@@ -1,12 +1,16 @@
 import { Resend } from "resend";
 import { authEmailTemplate } from "./authEmailTemplate.js";
 import { resetPasswordTemplate } from "./generalTemplate.js";
+import {
+  createReferenceEmailHTML,
+  createReferenceEmailText,
+} from "./referenceEmailTemplate.js";
 
 // 👇 Load dotenv ONLY in development
-// if (process.env.NODE_ENV !== "production") {
-//   const dotenv = await import("dotenv");
-//   dotenv.config({ path: ".env" });
-// }
+if (process.env.NODE_ENV !== "production") {
+  const dotenv = await import("dotenv");
+  dotenv.config({ path: ".env" });
+}
 if (!process.env.RESEND_API_KEY) {
   throw new Error("RESEND_API_KEY is missing");
 }
@@ -81,5 +85,23 @@ export const sendResetPasswordLink = async (payload) => {
     return { error: "Failed to send reset password link email" };
   }
 
+  return response;
+};
+
+export const sendRefereeEmail = async (payload) => {
+  let formLink = `${process.env.FRONTENDURL}/reference?token=${payload.refereeToken}`;
+  let response;
+  try {
+    response = await resend.emails.send({
+      from: "Support <info@developer.cribe.org>",
+      to: payload.email,
+      subject: "Reference Request",
+      html: createReferenceEmailHTML({ ...payload, formLink }),
+      text: createReferenceEmailText({ ...payload, formLink }),
+    });
+  } catch (error) {
+    console.log(error);
+    return { error: "Failed to send reference email" };
+  }
   return response;
 };

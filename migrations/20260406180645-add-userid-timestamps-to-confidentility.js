@@ -1,38 +1,58 @@
 "use strict";
+
 /** @type {import('sequelize-cli').Migration} */
 export async function up(queryInterface, Sequelize) {
-  // Add userId (foreign key to users table)
-  await queryInterface.addColumn("forms_confidentility", "userId", {
-    type: Sequelize.UUID,
-    unique: true,
-    allowNull: false,
-    references: {
-      model: "users", // table name
-      key: "id",
-    },
-    onUpdate: "CASCADE",
-    onDelete: "SET DEFAULT", // Consider changing to 'CASCADE' or 'RESTRICT'
-  });
+  const table = await queryInterface.describeTable("forms_confidentility");
 
-  // Add createdAt
-  await queryInterface.addColumn("forms_confidentility", "createdAt", {
-    allowNull: false,
-    type: Sequelize.DATE,
-    defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),
-  });
+  // ✅ Add userId only if it doesn't exist
+  if (!table.userId) {
+    await queryInterface.addColumn("forms_confidentility", "userId", {
+      type: Sequelize.UUID,
+      unique: true,
+      allowNull: false,
+      references: {
+        model: "users",
+        key: "id",
+      },
+      onUpdate: "CASCADE",
+      onDelete: "SET DEFAULT",
+    });
+  }
 
-  // Add updatedAt
-  await queryInterface.addColumn("forms_confidentility", "updatedAt", {
-    allowNull: false,
-    type: Sequelize.DATE,
-    defaultValue: Sequelize.literal(
-      "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
-    ),
-  });
+  // ✅ Add createdAt only if it doesn't exist
+  if (!table.createdAt) {
+    await queryInterface.addColumn("forms_confidentility", "createdAt", {
+      allowNull: false,
+      type: Sequelize.DATE,
+      defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),
+    });
+  }
+
+  // ✅ Add updatedAt only if it doesn't exist
+  if (!table.updatedAt) {
+    await queryInterface.addColumn("forms_confidentility", "updatedAt", {
+      allowNull: false,
+      type: Sequelize.DATE,
+      defaultValue: Sequelize.literal(
+        "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
+      ),
+    });
+  }
 }
+
 export async function down(queryInterface, Sequelize) {
-  // Revert changes (remove columns in reverse order)
-  await queryInterface.removeColumn("forms_confidentility", "updatedAt");
-  await queryInterface.removeColumn("forms_confidentility", "createdAt");
-  await queryInterface.removeColumn("forms_confidentility", "userId");
+  const table = await queryInterface.describeTable("forms_confidentility");
+
+  // Remove in reverse order safely
+  if (table.updatedAt) {
+    await queryInterface.removeColumn("forms_confidentility", "updatedAt");
+  }
+
+  if (table.createdAt) {
+    await queryInterface.removeColumn("forms_confidentility", "createdAt");
+  }
+
+  if (table.userId) {
+    await queryInterface.removeColumn("forms_confidentility", "userId");
+  }
 }

@@ -11,6 +11,15 @@ export default (sequelize, DataTypes) => {
         targetKey: "id",
         as: "user", // Column in users table
       });
+
+      Reference.hasOne(models.ReferenceMailStatus, {
+        foreignKey: "referenceId",
+        as: "mail_status",
+      });
+      Reference.hasOne(models.ReferenceMailResponse, {
+        foreignKey: "referenceId",
+        as: "reference_details",
+      });
     }
   }
   Reference.init(

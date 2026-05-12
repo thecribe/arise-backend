@@ -5,8 +5,6 @@ import { generateSlug } from "../utils/generalUtils.js";
 export const getVisa = async (req, res) => {
   const { limit, offset } = req.query;
 
-  console.log({ limit: Number(limit), offset });
-
   try {
     if (Number(limit) === 0 && Number(offset) === 0) {
       const visa_type = await db.Visa_Type.findAll({
