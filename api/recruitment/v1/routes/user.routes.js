@@ -1,6 +1,7 @@
 import express from "express";
 import {
   addUser,
+  adminUserAdd,
   changeUserPassword,
   changeUserRole,
   editSingleUser,
@@ -24,6 +25,12 @@ router.get(
   getUsers,
 );
 router.post("/users", verifyRecaptcha, addUser);
+router.post(
+  "/admin/add-user",
+  authMiddleware,
+  authorizeRoles("super_administrator", "administrator", "recruitment_manager"),
+  adminUserAdd,
+);
 
 //SINGLE USER
 router.get("/users/:userId", authMiddleware, getSingleUser);

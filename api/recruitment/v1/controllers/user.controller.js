@@ -434,3 +434,76 @@ export const userPasswordReset = async (req, res) => {
     return res.status(500).json({ message: "Internal Server Error" });
   }
 };
+
+export const adminUserAdd = async (req, res) => {
+  try {
+    const {
+      firstName,
+      lastName,
+      email,
+      phone,
+      departmentSlug,
+      jobTypeSlug,
+      password,
+    } = req.body;
+
+    // CHECK FOR EMPTY FIELDS
+    if (
+      !firstName ||
+      !lastName ||
+      !email ||
+      !phone ||
+      !departmentSlug ||
+      !jobTypeSlug ||
+      !password
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "All fields are required",
+      });
+    }
+
+    // CHECK IF EMAIL ALREADY EXISTS
+    const existingUser = await db.User.findOne({
+      where: {
+        email,
+      },
+    });
+
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: "Email already exists",
+      });
+    }
+
+    // HASH PASSWORD
+    const salt = await bcrypt.genSalt(10);
+
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // CREATE USER
+    const newUser = await db.User.create({
+      firstName,
+      lastName,
+      email,
+      phone,
+      departmentSlug,
+      jobTypeSlug,
+      password: hashedPassword,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "User created successfully",
+      data: newUser,
+    });
+  } catch (error) {
+    console.log(error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
