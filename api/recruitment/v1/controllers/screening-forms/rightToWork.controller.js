@@ -40,10 +40,7 @@ export const uploadRightToWork = async (req, res) => {
             check.passport_proof,
             uploadedFiles.passport_proof,
           ),
-          brp_proof: mergeUploadFilestoJson(
-            check.brp_proof,
-            uploadedFiles.brp_proof,
-          ),
+
           right_to_work_update_check: mergeUploadFilestoJson(
             check.right_to_work_update_check,
             uploadedFiles.right_to_work_update_check,
@@ -58,7 +55,7 @@ export const uploadRightToWork = async (req, res) => {
       } else {
         return res
           .status(400)
-          .json({ message: "Error updating Emergency contact details" });
+          .json({ message: "Right to Work form is already audited" });
       }
     } else {
       const payload = {
@@ -70,7 +67,6 @@ export const uploadRightToWork = async (req, res) => {
           "[]",
           uploadedFiles.passport_proof,
         ),
-        brp_proof: mergeUploadFilestoJson("[]", uploadedFiles.brp_proof),
         right_to_work_update_check: mergeUploadFilestoJson(
           "[]",
           uploadedFiles.right_to_work_update_check,
@@ -88,6 +84,7 @@ export const uploadRightToWork = async (req, res) => {
       .status(200)
       .json({ message: "Emergency contact updated Successfully" });
   } catch (error) {
+    console.log(error);
     return res
       .status(400)
       .json({ message: "Error updating emergency contact details" });

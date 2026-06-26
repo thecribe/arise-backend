@@ -7,27 +7,28 @@ import {
   getVisa,
 } from "../controllers/visa.controller.js";
 import { authMiddleware } from "../middleware/auth.middleware.js";
-import { authorizeRoles } from "../middleware/role.middleware.js";
+import { authorizeRoles, PERMISSIONS } from "../middleware/role.middleware.js";
 
 const router = express.Router();
+const { JOBTYPE } = PERMISSIONS;
 
 router.get("/visa-type", getVisa);
 router.post(
   "/visa-type",
   authMiddleware,
-  authorizeRoles("super_administrator", "administrator", "recruitment_manager"),
+  authorizeRoles(JOBTYPE.CREATE),
   addVisa,
 );
 router.put(
   "/visa-type",
   authMiddleware,
-  authorizeRoles("super_administrator", "administrator", "recruitment_manager"),
+  authorizeRoles(JOBTYPE.UPDATE),
   editVisa,
 );
 router.delete(
   "/visa-type",
   authMiddleware,
-  authorizeRoles("super_administrator", "administrator", "recruitment_manager"),
+  authorizeRoles(JOBTYPE.DELETE),
   deleteVisa,
 );
 

@@ -1,4 +1,3 @@
-import { type } from "node:os";
 import db from "../../../../models/index.js";
 import { createToken, verifyToken } from "../utils/tokens.js";
 import {
@@ -6,7 +5,23 @@ import {
   sendResetPasswordLink,
 } from "../email/emailHandler.js";
 import bcrypt from "bcryptjs";
+import { processEmailQueue } from "../services/emailQueue.service.js";
+import { sendEmailWithFallback } from "../services/sendEmailWithFallback.js";
 
+export const emailCronJob = async (req, res) => {
+  if (req.headers["x-cron-secret"] !== process.env.CRON_SECRET) {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized",
+    });
+  }
+
+  await processEmailQueue();
+
+  return res.status(200).json({
+    message: "Queue processed",
+  });
+};
 export const sendEmail = async (req, res) => {
   const { email, payload } = req.body;
 
@@ -43,87 +58,116 @@ export const sendEmail = async (req, res) => {
 };
 
 export const userResetPasswordEmail = async (req, res) => {
-  const id = req.body.userId;
+  const { email } = req.body;
 
-  if (!id) {
-    return res.status(400).json({ message: "User ID is required" });
+  if (!email?.trim()) {
+    return res.status(400).json({
+      message: "Email is required",
+    });
   }
 
+  const t = await db.sequelize.transaction();
+
   try {
-    const user = await db.User.findOne({ where: { id } });
-
-    if (!user) {
-      return res.status(400).json({ message: "Invalid user ID" });
-    }
-
-    if (!user.emailVerified) {
-      return res.status(400).json({
-        message:
-          "Email not verified. Please verify your email before resetting password",
-      });
-    }
-
-    const resetToken = createToken(
-      {
-        id: user.id,
+    const user = await db.User.findOne({
+      where: {
+        email: email.trim().toLowerCase(),
       },
-      "15m",
-    );
+      transaction: t,
+    });
 
-    if (!resetToken) {
-      return res.status(500).json({
-        status: false,
-        message: "Failed to send reset password email",
+    /**
+     * Don't reveal whether the email exists.
+     */
+    if (!user) {
+      await t.rollback();
+
+      return res.status(200).json({
+        message:
+          "If an account exists with this email address, a password reset link has been sent.",
       });
     }
 
-    const t = await db.sequelize.transaction();
-
+    /**
+     * Optional:
+     * Revoke previous active reset tokens
+     */
     await db.Token.update(
-      { revokedAt: new Date() },
+      {
+        revokedAt: new Date(),
+      },
       {
         where: {
           userId: user.id,
-          type: "password_reset",
+          type: "reset-password",
           revokedAt: null,
         },
         transaction: t,
       },
     );
 
+    const resetPasswordToken = createToken(
+      {
+        userId: user.id,
+        email: user.email,
+      },
+      "30m",
+    );
+
+    if (!resetPasswordToken) {
+      await t.rollback();
+
+      return res.status(500).json({
+        message: "Failed to create reset token",
+      });
+    }
+
     await db.Token.create(
       {
-        token: resetToken,
+        token: resetPasswordToken,
+        type: "reset-password",
         userId: user.id,
-        type: "password_reset",
       },
       {
         transaction: t,
       },
     );
 
-    const mailResponse = await sendResetPasswordLink({
-      email: user.email,
-      firstName: user.firstName,
-      resetToken,
-    });
-    if (mailResponse.error) {
-      await t.rollback();
-      return res
-        .status(500)
-        .json({ message: "Failed to send reset password email" });
-    }
+    const emailJob = await db.EmailQueues.create(
+      {
+        type: "reset-password",
+
+        payload: {
+          email: user.email,
+          firstName: user.firstName,
+          resetPasswordToken,
+        },
+      },
+      {
+        transaction: t,
+      },
+    );
 
     await t.commit();
 
-    res.status(200).json({
-      status: true,
-      message: "Reset password email sent successfully",
+    setImmediate(() => {
+      sendEmailWithFallback(emailJob.id);
+    });
+
+    return res.status(200).json({
+      message:
+        "If an account exists with this email address, a password reset link has been sent.",
     });
   } catch (error) {
-    await t.rollback();
-    console.error("Error in userResetPasswordEmail:", error);
-    return res.status(500).json({ message: "Internal server error" });
+    if (!t.finished) {
+      await t.rollback();
+    }
+
+    console.error("Forgot password error:", error);
+
+    return res.status(500).json({
+      message: "Internal Server Error",
+    });
   }
 };
 
@@ -131,81 +175,160 @@ export const sendReferenceEmail = async (req, res) => {
   const { referenceId } = req.params;
 
   if (!referenceId) {
-    return res.status(400).json({ message: "Reference ID is required" });
+    return res.status(400).json({
+      message: "Reference ID is required",
+    });
   }
 
+  const t = await db.sequelize.transaction();
+
   try {
-    const reference = await db.Reference.findOne({
-      where: { id: referenceId },
+    const reference = await db.Reference.findByPk(referenceId, {
+      transaction: t,
     });
 
     if (!reference) {
-      return res.status(400).json({ message: "Invalid reference ID" });
+      await t.rollback();
+
+      return res.status(404).json({
+        message: "Reference not found",
+      });
     }
 
-    const getUser = await db.User.findOne({
-      where: { id: reference.userId },
-      attributes: ["firstName", "lastName"],
+    const user = await db.User.findByPk(reference.userId, {
+      attributes: ["id", "firstName", "lastName", "email"],
+      transaction: t,
     });
 
-    if (!getUser) {
-      return res.status(400).json({ message: "Invalid user ID" });
+    if (!user) {
+      await t.rollback();
+
+      return res.status(404).json({
+        message: "Applicant not found",
+      });
     }
 
-    const updateReferencetoken = await db.Token.update(
-      { revokedAt: new Date() },
+    /**
+     * Revoke previous active reference tokens
+     */
+    await db.Token.update(
+      {
+        revokedAt: new Date(),
+      },
       {
         where: {
           userId: reference.userId,
           type: "reference",
           revokedAt: null,
         },
+        transaction: t,
       },
     );
 
-    //CREATE TOKEN FOR REFERENCE
+    /**
+     * Create new reference token
+     */
     const refereeToken = createToken(
-      { referenceId, userId: reference.userId },
+      {
+        referenceId: reference.id,
+        userId: reference.userId,
+      },
       "30d",
     );
 
-    await db.Token.create({
-      token: refereeToken,
-      userId: reference.userId,
-      type: "reference",
-    });
+    if (!refereeToken) {
+      await t.rollback();
 
-    const mailresponse = await sendRefereeEmail({
-      applicantName: `${getUser.firstName} ${getUser.lastName}`,
-      email: reference.referee_email,
-      refereeToken: refereeToken,
-      yourFullName: "Arise Nursing Recruitment Team",
-    });
-    if (mailresponse.error) {
-      return res
-        .status(500)
-        .json({ message: "Failed to send reference email" });
+      return res.status(500).json({
+        message: "Failed to generate reference token",
+      });
     }
 
+    await db.Token.create(
+      {
+        token: refereeToken,
+        userId: reference.userId,
+        type: "reference",
+      },
+      {
+        transaction: t,
+      },
+    );
+
+    /**
+     * Create Email Queue Job
+     */
+    const emailJob = await db.EmailQueue.create(
+      {
+        type: "reference",
+
+        payload: {
+          applicantName: `${user.firstName} ${user.lastName}`,
+          email: reference.referee_email,
+          refereeName: reference.referee_name,
+          refereeToken,
+          yourFullName: "Arise Nursing Recruitment Team",
+        },
+      },
+      {
+        transaction: t,
+      },
+    );
+
+    /**
+     * Update mail status
+     */
     const mailStatus = await db.ReferenceMailStatus.findOne({
-      where: { referenceId },
+      where: {
+        referenceId,
+      },
+      transaction: t,
     });
 
     if (mailStatus) {
-      await db.ReferenceMailStatus.update(
-        { status: "pending" },
-        { where: { referenceId } },
+      await mailStatus.update(
+        {
+          status: "pending",
+        },
+        {
+          transaction: t,
+        },
       );
     } else {
-      await db.ReferenceMailStatus.create({ status: "pending", referenceId });
+      await db.ReferenceMailStatus.create(
+        {
+          referenceId,
+          status: "pending",
+        },
+        {
+          transaction: t,
+        },
+      );
     }
 
-    res.status(200).json({
+    await t.commit();
+
+    /**
+     * Attempt immediate send.
+     * If it fails, the queue will retry automatically.
+     */
+    setImmediate(() => {
+      sendEmailWithFallback(emailJob.id);
+    });
+
+    return res.status(200).json({
       status: true,
       message: "Reference email sent successfully",
     });
   } catch (error) {
-    console.error("Error in sendReferenceEmail:", error);
-    return res.status(500).json({ message: "Internal server error" });
+    if (!t.finished) {
+      await t.rollback();
+    }
+
+    console.error("Error sending reference email:", error);
+
+    return res.status(500).json({
+      message: "Internal Server Error",
+    });
   }
 };

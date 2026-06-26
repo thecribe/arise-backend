@@ -62,3 +62,9 @@ export default (sequelize, DataTypes) => {
   );
   return Token;
 };
+
+// Token type
+// verify-email
+// setup-password
+// reset-password
+// reference

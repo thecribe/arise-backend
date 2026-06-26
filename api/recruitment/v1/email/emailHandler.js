@@ -5,8 +5,16 @@ import {
   createReferenceEmailHTML,
   createReferenceEmailText,
 } from "./referenceEmailTemplate.js";
+import {
+  createForgotPasswordEmailHTML,
+  createForgotPasswordEmailText,
+} from "./forgotPasswordTemplate.js";
+import {
+  createEmailVerificationHTML,
+  createEmailVerificationText,
+} from "./verifyEmailTemplate.js";
 
-// // 👇 Load dotenv ONLY in development
+// 👇 Load dotenv ONLY in development
 // if (process.env.NODE_ENV !== "production") {
 //   const dotenv = await import("dotenv");
 //   dotenv.config({ path: ".env" });
@@ -22,20 +30,14 @@ if (!process.env.FRONTENDURL) {
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const sendEmailVerification = async (payload) => {
-  const link = `${process.env.FRONTENDURL}/verify-email?token=${payload.verificationToken}`;
-  let response;
-  try {
-    response = await resend.emails.send({
-      from: "Support <info@developer.cribe.org>",
-      to: payload.email,
-      subject: "Email Verification",
-      // react: EmailComponent({ user: payload }),
-      html: `<p>Hello ${payload?.firstName},</p><p>Please click the link below to verify your email:</p><a href=${link}>Verify Email</a>`,
-    });
-  } catch (error) {
-    return { error: "Failed to send email" };
-  }
-  return response;
+  const verificationLink = `${process.env.FRONTENDURL}/verify-email?token=${payload.verificationToken}`;
+  return await resend.emails.send({
+    from: "Support <info@developer.cribe.org>",
+    to: payload.email,
+    subject: "Email Verification",
+    html: createEmailVerificationHTML({ ...payload, verificationLink }),
+    text: createEmailVerificationText({ ...payload, verificationLink }),
+  });
 };
 
 export const sendAuthenticationLink = async (payload) => {
@@ -59,49 +61,24 @@ export const sendAuthenticationLink = async (payload) => {
 };
 
 export const sendResetPasswordLink = async (payload) => {
-  const resetLink = `${process.env.FRONTENDURL}/reset-password?token=${payload.resetToken}`;
-  let response;
-  try {
-    response = await resend.emails.send({
-      from: "Support <info@developer.cribe.org>",
-      to: payload.email,
-      subject: "Reset Password Link",
-      html: await resetPasswordTemplate({
-        title: "Reset Your Password",
-        name: payload.firstName,
-        content: [
-          "Please click the button below to reset your password.",
-          `<a href=${resetLink}
-                     style="display:inline-block;padding:14px 28px;
-                     background:#111827;color:#ffffff;
-                     text-decoration:none;border-radius:6px;
-                     font-weight:bold;">
-                     Reset Password
-                  </a>`,
-        ],
-      }),
-    });
-  } catch (error) {
-    return { error: "Failed to send reset password link email" };
-  }
-
-  return response;
+  const resetLink = `${process.env.FRONTENDURL}/reset-password?token=${payload.resetPasswordToken}`;
+  return await resend.emails.send({
+    from: "Support <info@developer.cribe.org>",
+    to: payload.email,
+    subject: "Reset Password Link",
+    html: createForgotPasswordEmailHTML({ ...payload, resetLink }),
+    text: createForgotPasswordEmailText({ ...payload, resetLink }),
+  });
 };
 
 export const sendRefereeEmail = async (payload) => {
   let formLink = `${process.env.FRONTENDURL}/reference?token=${payload.refereeToken}`;
-  let response;
-  try {
-    response = await resend.emails.send({
-      from: "Support <info@developer.cribe.org>",
-      to: payload.email,
-      subject: "Reference Request",
-      html: createReferenceEmailHTML({ ...payload, formLink }),
-      text: createReferenceEmailText({ ...payload, formLink }),
-    });
-  } catch (error) {
-    console.log(error);
-    return { error: "Failed to send reference email" };
-  }
-  return response;
+
+  return await resend.emails.send({
+    from: "Support <info@developer.cribe.org>",
+    to: payload.email,
+    subject: "Reference Request",
+    html: createReferenceEmailHTML({ ...payload, formLink }),
+    text: createReferenceEmailText({ ...payload, formLink }),
+  });
 };

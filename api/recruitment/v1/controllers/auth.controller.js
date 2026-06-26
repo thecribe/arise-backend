@@ -167,20 +167,50 @@ export const getUserSession = async (req, res) => {
   try {
     const getUser = await db.User.findOne({
       where: {
-        id: user.id, // belongs to the user
+        id: user.id,
       },
-      include: [{ model: db.Role, as: "role" }],
+      include: [
+        {
+          model: db.Role,
+          as: "role",
+          include: [
+            {
+              model: db.Permission,
+              as: "permissions",
+              through: {
+                attributes: [],
+              },
+            },
+          ],
+        },
+      ],
     });
+
+    if (!getUser) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    const permissions =
+      getUser.role?.permissions?.map(
+        (permission) => `${permission.resource}:${permission.action}`,
+      ) || [];
 
     return res.status(200).json({
       id: getUser.id,
       email: getUser.email,
       role: getUser.role,
+      permissions,
       name: `${getUser.firstName} ${getUser.lastName}`,
       profileImg: getUser.profileImg ? JSON.parse(getUser.profileImg) : null,
     });
   } catch (error) {
-    return res.status(500).json({ message: "Internal Server Error" });
+    console.error(error);
+
+    return res.status(500).json({
+      message: "Internal Server Error",
+    });
   }
 };
 
@@ -196,6 +226,7 @@ export const credentialAuth = async (req, res) => {
       where: { email: email.trim().toLowerCase() },
     });
 
+    console.log({ user });
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -267,6 +298,7 @@ export const credentialAuth = async (req, res) => {
 
     return res.status(200).json({ message: "User logged in successfully" });
   } catch (error) {
+    console.log(error);
     return res.status(500).json({ message: "Internal Server Error" });
   }
 };
@@ -390,47 +422,69 @@ export const verifyResetPasswordToken = async (req, res) => {
   const { token } = req.query;
 
   if (!token) {
-    return res.status(400).json({ message: "Reset password token is missing" });
-  }
-
-  const verification = verifyToken(token);
-
-  if (!verification.valid) {
     return res.status(400).json({
-      status: false,
-      message: verification.expired
-        ? "Reset password link has expired."
-        : "Reset password link is invalid.",
+      message: "Reset password token is missing",
     });
   }
 
   try {
+    const verification = verifyToken(token);
+
+    if (!verification.valid) {
+      return res.status(400).json({
+        status: false,
+        message: verification.expired
+          ? "Reset password link has expired."
+          : "Reset password link is invalid.",
+      });
+    }
+
     const singleToken = await db.Token.findOne({
       where: {
-        token: token,
+        token,
+        type: "reset-password",
+        userId: verification.payload.userId,
       },
     });
+
+    if (!singleToken) {
+      return res.status(400).json({
+        status: false,
+        message: "Reset password token is invalid or no longer exists.",
+      });
+    }
 
     if (singleToken.revokedAt) {
       return res.status(400).json({
         status: false,
         message:
-          "Reset password link has been revoked. Please try again to receive a new reset password link.",
+          "Reset password link has already been used. Please request a new password reset link.",
       });
     }
 
     await db.Token.update(
-      { revokedAt: new Date() },
-      { where: { userId: verification.payload.id, revokedAt: null } },
+      {
+        revokedAt: new Date(),
+      },
+      {
+        where: {
+          userId: verification.payload.userId,
+          type: "reset-password",
+          revokedAt: null,
+        },
+      },
     );
 
-    res.status(200).json({
-      verification,
+    return res.status(200).json({
       status: true,
+      userId: verification.payload.userId,
       message: "Reset password token is valid",
     });
   } catch (error) {
     console.error("Error in verifyResetPasswordToken:", error);
-    return res.status(500).json({ message: "Internal Server Error" });
+
+    return res.status(500).json({
+      message: "Internal Server Error",
+    });
   }
 };

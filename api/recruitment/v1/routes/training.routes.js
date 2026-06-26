@@ -14,15 +14,16 @@ import {
 import { screeningUploadHandler } from "../controllers/fileUpload.controller.js";
 import { upload } from "../utils/multerHandler.js";
 import { authMiddleware } from "../middleware/auth.middleware.js";
-import { authorizeRoles } from "../middleware/role.middleware.js";
+import { authorizeRoles, PERMISSIONS } from "../middleware/role.middleware.js";
 
 const router = express.Router();
+const { CERTIFICATE, APPLICATION_FORM } = PERMISSIONS;
 
 //EACH APPLICANT AUDIT STATUS
 router.patch(
   "/training/audit-status/:userId",
   authMiddleware,
-  authorizeRoles("super_administrator", "administrator", "recruitment_manager"),
+  authorizeRoles(APPLICATION_FORM.AUDIT),
   setAuditStatus,
 );
 
@@ -62,19 +63,19 @@ router.get(
 router.post(
   "/training/mandatory-certificate",
   authMiddleware,
-  authorizeRoles("recruitment_manager"),
+  authorizeRoles(CERTIFICATE.CREATE),
   uploadMandatoryCertificate,
 );
 router.put(
   "/training/mandatory-certificate/:certificateId",
   authMiddleware,
-  authorizeRoles("recruitment_manager"),
+  authorizeRoles(CERTIFICATE.UPDATE),
   updateMandatoryCertificate,
 );
 router.delete(
   "/training/mandatory-certificate/:certificateId",
   authMiddleware,
-  authorizeRoles("recruitment_manager"),
+  authorizeRoles(CERTIFICATE.DELETE),
   deleteMandatoryCertificate,
 );
 

@@ -36,24 +36,31 @@ export const uploadProfessionalMembership = async (req, res) => {
           body_type: body.body_type,
           pin: body.pin,
           renewal_date: body.renewal_date,
-          dbs_disclosure: body.dbs_disclosure,
-          issue_date: body.issue_date,
-          clear: body.clear,
-          disclosure_number: body.disclosure_number,
-          certificate_registration: body.certificate_registration,
           membership_card_upload: mergeUploadFilestoJson(
             check.membership_card_upload,
             uploadedFiles.membership_card_upload,
           ),
+          available_document: body.available_document,
+          dbs_disclosure: body.dbs_disclosure,
+          issue_date: body.issue_date,
+          expiry_date: body.expiry_date,
+          clear: body.clear,
+          disclosure_number: body.disclosure_number,
+          certificate_registration: body.certificate_registration,
           current_dbs_upload: mergeUploadFilestoJson(
             check.current_dbs_upload,
             uploadedFiles.current_dbs_upload,
+          ),
+          pbv_issue_date: body.pbv_issue_date,
+          pbv_expiry_date: body.pbv_expiry_date,
+          pbv_document_upload: mergeUploadFilestoJson(
+            check.pbv_document_upload,
+            uploadedFiles.pbv_document_upload,
           ),
           dbs_update_check: mergeUploadFilestoJson(
             check.dbs_update_check,
             uploadedFiles.dbs_update_check,
           ),
-          expiry_date: body.expiry_date,
         };
 
         const percentage = getCompletionPercentage(payload);
@@ -64,31 +71,38 @@ export const uploadProfessionalMembership = async (req, res) => {
       } else {
         return res
           .status(400)
-          .json({ message: "Error updating  Contact details" });
+          .json({ message: "Error updating  Professional Membership details" });
       }
     } else {
       const payload = {
         body_type: body.body_type,
         pin: body.pin,
         renewal_date: body.renewal_date,
-        dbs_disclosure: body.dbs_disclosure,
-        issue_date: body.issue_date,
-        clear: body.clear,
-        disclosure_number: body.disclosure_number,
-        certificate_registration: body.certificate_registration,
         membership_card_upload: mergeUploadFilestoJson(
           "[]",
           uploadedFiles.membership_card_upload,
         ),
+        available_document: body.available_document,
+        dbs_disclosure: body.dbs_disclosure,
+        issue_date: body.issue_date,
+        expiry_date: body.expiry_date,
+        clear: body.clear,
+        disclosure_number: body.disclosure_number,
+        certificate_registration: body.certificate_registration,
         current_dbs_upload: mergeUploadFilestoJson(
           "[]",
           uploadedFiles.current_dbs_upload,
+        ),
+        pbv_issue_date: body.pbv_issue_date,
+        pbv_expiry_date: body.pbv_expiry_date,
+        pbv_document_upload: mergeUploadFilestoJson(
+          "[]",
+          uploadedFiles.pbv_document_upload,
         ),
         dbs_update_check: mergeUploadFilestoJson(
           "[]",
           uploadedFiles.dbs_update_check,
         ),
-        expiry_date: body.expiry_date,
       };
 
       const percentage = getCompletionPercentage(payload);
@@ -98,9 +112,13 @@ export const uploadProfessionalMembership = async (req, res) => {
         userId,
       });
     }
-    return res.status(200).json({ message: " Contact updated Successfully" });
+    return res
+      .status(200)
+      .json({ message: " Professional Membership updated Successfully" });
   } catch (error) {
-    return res.status(500).json({ message: "Error updating  Contact details" });
+    return res
+      .status(500)
+      .json({ message: "Error updating  Professional Membership details" });
   }
 };
 
@@ -124,15 +142,15 @@ export const updateProfessionalMembership = async (req, res) => {
     } else {
       return res
         .status(400)
-        .json({ message: "Error updating  Contact Info details" });
+        .json({ message: "Error updating  Professional Membership details" });
     }
     return res
       .status(200)
-      .json({ message: " Contact Info Updated Successfully" });
+      .json({ message: " Professional Membership Updated Successfully" });
   } catch (error) {
     return res
       .status(400)
-      .json({ message: "Error updating  Contact Info details" });
+      .json({ message: "Error updating  Professional Membership details" });
   }
 };
 

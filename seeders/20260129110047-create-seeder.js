@@ -27,7 +27,7 @@ export async function up(queryInterface, Sequelize) {
     { role: "Super Administrator", slug: "super_administrator" },
     { role: "Administrator", slug: "administrator" },
     { role: "Applicant", slug: "applicant" },
-    { role: "Client", slug: "client" },
+    { role: "Inactive", slug: "inactive" },
     { role: "Staff", slug: "staff" },
     { role: "Recruitment Manager", slug: "recruitment_manager" },
   ]);

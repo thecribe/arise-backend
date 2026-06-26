@@ -49,6 +49,15 @@ export default (sequelize, DataTypes) => {
         type: DataTypes.DATE,
       },
 
+      membership_card_upload: {
+        type: DataTypes.TEXT,
+        defaultValue: "[]",
+      },
+
+      available_document: {
+        type: DataTypes.STRING,
+        defaultValue: "[]",
+      },
       // Gender field (free STRING)
       dbs_disclosure: {
         type: DataTypes.STRING,
@@ -57,7 +66,9 @@ export default (sequelize, DataTypes) => {
       issue_date: {
         type: DataTypes.DATE,
       },
-
+      expiry_date: {
+        type: DataTypes.DATE,
+      },
       // Employee internal identifier
       clear: {
         type: DataTypes.STRING,
@@ -71,11 +82,17 @@ export default (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         defaultValue: "",
       },
-      membership_card_upload: {
+      current_dbs_upload: {
         type: DataTypes.TEXT,
         defaultValue: "[]",
       },
-      current_dbs_upload: {
+      pbv_issue_date: {
+        type: DataTypes.DATE,
+      },
+      pbv_expiry_date: {
+        type: DataTypes.DATE,
+      },
+      pbv_document_upload: {
         type: DataTypes.TEXT,
         defaultValue: "[]",
       },
@@ -85,9 +102,7 @@ export default (sequelize, DataTypes) => {
       },
 
       // Country of origin or residence
-      expiry_date: {
-        type: DataTypes.DATE,
-      },
+
       completion_rate: {
         type: DataTypes.DECIMAL(4, 1),
         defaultValue: 0,

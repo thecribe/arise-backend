@@ -824,6 +824,15 @@ export async function up(queryInterface, Sequelize) {
       type: Sequelize.DATE,
     },
 
+    membership_card_upload: {
+      type: Sequelize.TEXT,
+      defaultValue: "[]",
+    },
+
+    available_document: {
+      type: Sequelize.STRING,
+      defaultValue: "[]",
+    },
     // Gender field (free STRING)
     dbs_disclosure: {
       type: Sequelize.STRING,
@@ -832,7 +841,9 @@ export async function up(queryInterface, Sequelize) {
     issue_date: {
       type: Sequelize.DATE,
     },
-
+    expiry_date: {
+      type: Sequelize.DATE,
+    },
     // Employee internal identifier
     clear: {
       type: Sequelize.STRING,
@@ -846,22 +857,23 @@ export async function up(queryInterface, Sequelize) {
       type: Sequelize.STRING,
       defaultValue: "",
     },
-    membership_card_upload: {
+    current_dbs_upload: {
       type: Sequelize.TEXT,
       defaultValue: "[]",
     },
-    current_dbs_upload: {
+    pbv_issue_date: {
+      type: Sequelize.DATE,
+    },
+    pbv_expiry_date: {
+      type: Sequelize.DATE,
+    },
+    pbv_document_upload: {
       type: Sequelize.TEXT,
       defaultValue: "[]",
     },
     dbs_update_check: {
       type: Sequelize.TEXT,
       defaultValue: "[]",
-    },
-
-    // Country of origin or residence
-    expiry_date: {
-      type: Sequelize.DATE,
     },
     completion_rate: {
       type: Sequelize.DECIMAL(4, 1),
@@ -1049,10 +1061,7 @@ export async function up(queryInterface, Sequelize) {
       type: Sequelize.TEXT,
       defaultValue: "[]",
     },
-    brp_proof: {
-      type: Sequelize.TEXT,
-      defaultValue: "[]",
-    },
+
     right_to_work_update_check: {
       type: Sequelize.TEXT,
       defaultValue: "[]",

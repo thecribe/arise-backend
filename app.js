@@ -12,6 +12,7 @@ import completionRateRoutes from "./api/recruitment/v1/routes/completionRate.rou
 import emailRoutes from "./api/recruitment/v1/routes/email.routes.js";
 import authRoutes from "./api/recruitment/v1/routes/auth.routes.js";
 import analyticsRoutes from "./api/recruitment/v1/routes/analytics.routes.js";
+import complianceRoutes from "./api/recruitment/v1/routes/compliance.route.js";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import path from "path";
@@ -96,6 +97,9 @@ app.use(API_BASE_ROUTE, jobtypeRoutes);
 app.use(API_BASE_ROUTE, departmentRoutes);
 //Completion Rate ROUTE
 app.use(API_BASE_ROUTE, completionRateRoutes);
+
+//COmpliance Documents Route
+app.use(API_BASE_ROUTE, complianceRoutes);
 
 //Email Route
 app.use(API_BASE_ROUTE, emailRoutes);

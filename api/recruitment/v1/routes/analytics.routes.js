@@ -13,5 +13,9 @@ router.get(
   getUserAllFormProgress,
 );
 
-router.get("/analytics/compliance/:userId", getUserComplianceStatus);
+router.get(
+  "/analytics/compliance/:userId",
+  authMiddleware,
+  getUserComplianceStatus,
+);
 export default router;

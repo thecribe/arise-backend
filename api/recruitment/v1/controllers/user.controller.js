@@ -4,6 +4,8 @@ import bcrypt from "bcryptjs";
 import { createToken, verifyToken } from "../utils/tokens.js";
 import { sendEmailVerification } from "../email/emailHandler.js";
 import { mergeUploadFilestoJson } from "../utils/generalUtils.js";
+import { processSingleEmailJob } from "../services/emailQueue.service.js";
+import { sendEmailWithFallback } from "../services/sendEmailWithFallback.js";
 
 export const getUsers = async (req, res) => {
   const { limit, offset, department, job_type, type } = req.query;
@@ -67,52 +69,179 @@ export const addUser = async (req, res) => {
       firstName: body.firstName.trim(),
       lastName: body.lastName.trim(),
     };
-    const [user, created] = await db.User.findOrCreate({
-      where: { email: payload.email },
-      defaults: {
-        ...payload,
-        roleSlug: body.roleSlug || "applicant",
-        departmentSlug: body.departmentSlug || "uncategorised",
+
+    let user = await db.User.findOne({
+      where: {
+        email: payload.email,
       },
       transaction: t,
     });
 
-    if (!created) {
-      await t.rollback();
-      return res
-        .status(400)
-        .json({ message: "User already exists! Please login with your email" });
+    /**
+     * User already exists
+     */
+    if (user) {
+      /**
+       * Email already verified
+       */
+      if (user.emailVerified) {
+        await t.rollback();
+
+        return res.status(400).json({
+          status: false,
+          message: "An account with this email already exists. Please log in.",
+        });
+      }
+
+      /**
+       * User exists but has not verified email.
+       * Revoke previous verification tokens.
+       */
+      await db.Token.update(
+        {
+          revokedAt: new Date(),
+        },
+        {
+          where: {
+            userId: user.id,
+            type: "verify-email",
+            revokedAt: null,
+          },
+          transaction: t,
+        },
+      );
+
+      const verificationToken = createToken(
+        {
+          id: user.id,
+          email: user.email,
+        },
+        "30m",
+      );
+
+      if (!verificationToken) {
+        await t.rollback();
+
+        return res.status(500).json({
+          message: "Error creating verification token",
+        });
+      }
+
+      await db.Token.create(
+        {
+          token: verificationToken,
+          type: "verify-email",
+          userId: user.id,
+        },
+        {
+          transaction: t,
+        },
+      );
+
+      const emailJob = await db.EmailQueues.create(
+        {
+          type: "verify-email",
+          payload: {
+            email: user.email,
+            firstName: user.firstName,
+            verificationToken,
+          },
+        },
+        {
+          transaction: t,
+        },
+      );
+
+      await t.commit();
+
+      setImmediate(() => {
+        sendEmailWithFallback(emailJob.id);
+      });
+
+      return res.status(200).json({
+        status: true,
+        emailVerified: false,
+        message:
+          "Your account already exists but your email has not been verified. A new verification email has been sent.",
+      });
     }
+
+    /**
+     * Create new user
+     */
+    user = await db.User.create(
+      {
+        ...payload,
+        roleSlug: body.roleSlug || "applicant",
+        departmentSlug: body.departmentSlug || "uncategorised",
+      },
+      {
+        transaction: t,
+      },
+    );
 
     const verificationToken = createToken(
       {
-        email: payload.email,
         id: user.id,
+        email: user.email,
       },
       "30m",
     );
+
     if (!verificationToken) {
+      await t.rollback();
+
       return res.status(500).json({
-        message:
-          "Error creating verification token, Please login with your email to verify your account",
+        message: "Error creating verification token",
       });
     }
 
-    payload.verificationToken = verificationToken;
+    await db.Token.create(
+      {
+        token: verificationToken,
+        type: "verify-email",
+        userId: user.id,
+      },
+      {
+        transaction: t,
+      },
+    );
 
-    const mailResponse = await sendEmailVerification(payload);
+    const emailJob = await db.EmailQueues.create(
+      {
+        type: "verify-email",
+        payload: {
+          email: user.email,
+          firstName: user.firstName,
+          verificationToken,
+        },
+      },
+      {
+        transaction: t,
+      },
+    );
 
-    if (mailResponse.error) {
-      return res.status(500).json({
-        message:
-          "Error sending verification email. Please login with your email to verify your profile",
-      });
-    }
     await t.commit();
-    return res.status(201).json({ message: "User created successfully" });
+
+    setImmediate(() => {
+      sendEmailWithFallback(emailJob.id);
+    });
+
+    return res.status(201).json({
+      status: true,
+      message:
+        "Registration successful. Please check your email to verify your account.",
+    });
   } catch (error) {
-    await t.rollback();
-    return res.status(500).json({ message: "Error creating user" });
+    console.error(error);
+
+    if (!t.finished) {
+      await t.rollback();
+    }
+
+    return res.status(500).json({
+      message: "Error creating user",
+    });
   }
 };
 
@@ -283,12 +412,19 @@ export const verifyUserEmail = async (req, res) => {
   const { token } = req.query;
 
   if (!token) {
-    return res.status(400).json({ message: "Verification token is missing" });
+    return res.status(400).json({
+      message: "Verification token is missing",
+    });
   }
+
+  const t = await db.sequelize.transaction();
 
   try {
     const verification = verifyToken(token);
+
     if (!verification.valid) {
+      await t.rollback();
+
       return res.status(400).json({
         status: false,
         emailVerified: false,
@@ -297,33 +433,261 @@ export const verifyUserEmail = async (req, res) => {
           : "Verification link is invalid.",
       });
     }
-    // Debugging log
-    //IF VERICATION LINK IS VALID, UPDATE USER EMAIL VERIFIED STATUS TO TRUE
+
+    const storedToken = await db.Token.findOne({
+      where: {
+        token,
+        type: "verify-email",
+        userId: verification.payload.id,
+        revokedAt: null,
+      },
+      transaction: t,
+    });
+
+    if (!storedToken) {
+      await t.rollback();
+
+      return res.status(400).json({
+        message: "Verification token has already been used or is invalid",
+      });
+    }
 
     const user = await db.User.findByPk(verification.payload.id, {
       include: [
-        { model: db.Role, as: "role" },
-        { model: db.Job_Type, as: "jobType" },
-        { model: db.Department, as: "department" },
+        {
+          model: db.Role,
+          as: "role",
+        },
+        {
+          model: db.Job_Type,
+          as: "jobType",
+        },
+        {
+          model: db.Department,
+          as: "department",
+        },
       ],
+      transaction: t,
     });
 
-    if (user.emailVerified) {
-      return res.status(200).json({ message: "Email already verified" });
-    }
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      await t.rollback();
+
+      return res.status(404).json({
+        message: "User not found",
+      });
     }
 
-    const [updatedUser] = await db.User.update(
-      { emailVerified: true },
-      { where: { id: verification.payload.id } },
+    if (user.emailVerified) {
+      await t.rollback();
+
+      return res.status(200).json({
+        message: "Email already verified",
+        userId: user.id,
+      });
+    }
+
+    await user.update(
+      {
+        emailVerified: true,
+      },
+      {
+        transaction: t,
+      },
     );
 
-    if (!updatedUser) {
-      return res.status(404).json({ message: "User not found" });
+    // Revoke ALL active verification tokens
+    await db.Token.update(
+      {
+        revokedAt: new Date(),
+      },
+      {
+        where: {
+          type: "verify-email",
+          userId: user.id,
+          revokedAt: null,
+        },
+        transaction: t,
+      },
+    );
+
+    const setupPasswordToken = createToken(
+      {
+        userId: user.id,
+      },
+      "15m",
+    );
+
+    if (!setupPasswordToken) {
+      await t.rollback();
+
+      return res.status(500).json({
+        message: "Failed to create setup password token",
+      });
+    }
+    await db.Token.update(
+      {
+        revokedAt: new Date(),
+      },
+      {
+        where: {
+          type: "setup-password",
+          userId: user.id,
+          revokedAt: null,
+        },
+        transaction: t,
+      },
+    );
+    await db.Token.create(
+      {
+        token: setupPasswordToken,
+        type: "setup-password",
+        userId: user.id,
+      },
+      {
+        transaction: t,
+      },
+    );
+
+    await t.commit();
+
+    return res.status(200).json({
+      message: "Email verified successfully",
+      emailVerified: true,
+      userId: user.id,
+      setupPasswordToken,
+    });
+  } catch (error) {
+    if (!t.finished) {
+      await t.rollback();
     }
 
+    console.error("Error verifying email:", error);
+
+    return res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+};
+
+export const setUserPassword = async (req, res) => {
+  const { token } = req.params;
+  const { password, confirm_password } = req.body;
+
+  if (!token) {
+    return res.status(400).json({
+      message: "Setup token is required",
+    });
+  }
+
+  if (!password || !confirm_password) {
+    return res.status(400).json({
+      message: "Password and confirmation password are required",
+    });
+  }
+
+  if (password !== confirm_password) {
+    return res.status(400).json({
+      message: "Passwords do not match",
+    });
+  }
+
+  /**
+   * Industry-standard password policy
+   */
+  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,128}$/;
+
+  if (!passwordRegex.test(password)) {
+    return res.status(400).json({
+      message:
+        "Password must contain at least 8 characters, one uppercase letter, one lowercase letter, one number and one special character",
+    });
+  }
+
+  const t = await db.sequelize.transaction();
+
+  try {
+    const verification = verifyToken(token);
+
+    if (!verification.valid) {
+      await t.rollback();
+
+      return res.status(400).json({
+        status: false,
+        message: verification.expired
+          ? "Password setup link has expired."
+          : "Password setup link is invalid.",
+      });
+    }
+
+    const storedToken = await db.Token.findOne({
+      where: {
+        token,
+        type: "setup-password",
+        userId: verification.payload.userId,
+        revokedAt: null,
+      },
+      transaction: t,
+    });
+
+    if (!storedToken) {
+      await t.rollback();
+
+      return res.status(400).json({
+        message: "Password setup token has already been used or is invalid",
+      });
+    }
+
+    const user = await db.User.findByPk(verification.payload.userId, {
+      transaction: t,
+    });
+
+    if (!user) {
+      await t.rollback();
+
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    /**
+     * Optional:
+     * Prevent password being set twice.
+     */
+    if (user.password) {
+      await t.rollback();
+
+      return res.status(400).json({
+        message: "Password has already been configured",
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    await user.update(
+      {
+        password: hashedPassword,
+      },
+      {
+        transaction: t,
+      },
+    );
+
+    /**
+     * Revoke setup password token
+     */
+    await storedToken.update(
+      {
+        revokedAt: new Date(),
+      },
+      {
+        transaction: t,
+      },
+    );
+
+    /**
+     * Create session
+     */
     const refreshToken = createToken(
       {
         id: user.id,
@@ -332,30 +696,34 @@ export const verifyUserEmail = async (req, res) => {
     );
 
     if (!refreshToken) {
+      await t.rollback();
+
       return res.status(500).json({
-        message:
-          "Error creating session token, Please login to create a new session",
+        message: "Error creating session token. Please login again.",
       });
     }
+    const encryptedRefreshToken = await bcrypt.hash(refreshToken, 10);
 
-    const encryptedToken = await bcrypt.hash(refreshToken, 10);
+    await db.Session.create(
+      {
+        refreshToken: encryptedRefreshToken,
+        userId: user.id,
+      },
+      {
+        transaction: t,
+      },
+    );
 
-    const createdSession = await db.Session.create({
-      refreshToken: encryptedToken,
-      userId: user.id,
-    });
+    await t.commit();
 
-    if (!createdSession) {
-      return res.status(500).json({
-        message: "Error creating session, Please login to create a new session",
-      });
-    }
-
+    /**
+     * Login user immediately
+     */
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       secure: false,
       sameSite: "lax",
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      maxAge: 30 * 24 * 60 * 60 * 1000,
     });
 
     const accessToken = createToken(
@@ -370,68 +738,122 @@ export const verifyUserEmail = async (req, res) => {
       httpOnly: true,
       secure: false,
       sameSite: "lax",
-      maxAge: 60 * 60 * 1000, // 1 hour
+      maxAge: 60 * 60 * 1000,
     });
 
-    return res.status(200).json({ message: "Email verified successfully" });
+    return res.status(200).json({
+      status: true,
+      message: "Password created successfully",
+    });
   } catch (error) {
-    console.error("Error verifying email:", error); // Log the error for debugging
-    return res.status(500).json({ message: "Internal Server Error" });
+    if (!t.finished) {
+      await t.rollback();
+    }
+
+    console.error("Password setup error:", error);
+
+    return res.status(500).json({
+      message: "Internal Server Error",
+    });
   }
 };
 
 export const userPasswordReset = async (req, res) => {
-  const { token } = req.params;
-  let { new_password, confirm_password } = req.body;
+  const { userId } = req.params;
+  const { new_password, confirm_password } = req.body;
 
-  new_password = new_password?.trim();
-  confirm_password = confirm_password?.trim();
+  const password = new_password?.trim();
+  const confirmPassword = confirm_password?.trim();
 
-  if (!token) {
-    return res.status(400).json({ message: "Invalid or missing token" });
-  }
-
-  if (!new_password || !confirm_password) {
-    return res.status(400).json({ message: "Password fields are required" });
-  }
-
-  if (new_password !== confirm_password) {
-    return res.status(400).json({ message: "Passwords do not match" });
-  }
-
-  if (new_password.length < 6) {
-    return res
-      .status(400)
-      .json({ message: "Password must be at least 6 characters" });
-  }
-
-  if (/\s/.test(new_password)) {
-    return res.status(400).json({ message: "Password cannot contain spaces" });
-  }
-
-  const verification = verifyToken(token);
-  if (!verification.valid) {
+  if (!userId) {
     return res.status(400).json({
-      status: false,
-      emailVerified: false,
-      message: verification.expired
-        ? "Token has expired."
-        : "Token is invalid.",
+      message: "User ID is required",
     });
   }
 
+  if (!password || !confirmPassword) {
+    return res.status(400).json({
+      message: "Password fields are required",
+    });
+  }
+
+  if (password !== confirmPassword) {
+    return res.status(400).json({
+      message: "Passwords do not match",
+    });
+  }
+
+  // Same policy used in setup password
+  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,128}$/;
+
+  if (!passwordRegex.test(password)) {
+    return res.status(400).json({
+      message:
+        "Password must contain at least 8 characters, one uppercase letter, one lowercase letter and one number",
+    });
+  }
+
+  if (/\s/.test(password)) {
+    return res.status(400).json({
+      message: "Password cannot contain spaces",
+    });
+  }
+
+  const t = await db.sequelize.transaction();
+
   try {
-    const hashPassword = await bcrypt.hash(new_password, 10);
-    const updatedUser = await db.User.update(
-      { password: hashPassword },
-      { where: { id: verification.payload.id } },
+    const user = await db.User.findByPk(userId, {
+      transaction: t,
+    });
+
+    if (!user) {
+      await t.rollback();
+
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    // Optional: Prevent reusing the current password
+    if (user.password) {
+      const isSamePassword = await bcrypt.compare(password, user.password);
+
+      if (isSamePassword) {
+        await t.rollback();
+
+        return res.status(400).json({
+          message: "New password must be different from your current password",
+        });
+      }
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    await user.update(
+      {
+        password: hashedPassword,
+      },
+      {
+        transaction: t,
+      },
     );
 
-    return res
-      .status(200)
-      .json({ message: "User password successfully updated" });
+    await t.commit();
+
+    return res.status(200).json({
+      status: true,
+      message: "Password successfully updated",
+    });
   } catch (error) {
-    return res.status(500).json({ message: "Internal Server Error" });
+    if (!t.finished) {
+      await t.rollback();
+    }
+
+    console.error("Password reset error:", error);
+
+    return res.status(500).json({
+      message: "Internal Server Error",
+    });
   }
 };
 
@@ -499,8 +921,6 @@ export const adminUserAdd = async (req, res) => {
       data: newUser,
     });
   } catch (error) {
-    console.log(error);
-
     return res.status(500).json({
       success: false,
       message: "Internal server error",

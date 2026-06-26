@@ -60,10 +60,7 @@ export default (sequelize, DataTypes) => {
         type: DataTypes.TEXT,
         defaultValue: "[]",
       },
-      brp_proof: {
-        type: DataTypes.TEXT,
-        defaultValue: "[]",
-      },
+
       right_to_work_update_check: {
         type: DataTypes.TEXT,
         defaultValue: "[]",

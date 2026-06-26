@@ -24,7 +24,6 @@ router.get("/auth/verify-email", userEmailLogin);
 router.get("/auth/logout", authMiddleware, userLogout);
 
 //VERIFY RESET PASSWORD
-
 router.get("/auth/reset-password", verifyResetPasswordToken);
 
 export default router;

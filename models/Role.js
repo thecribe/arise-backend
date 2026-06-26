@@ -2,7 +2,16 @@
 
 import { DataTypes, Model } from "sequelize";
 export default (sequelize, DataTypes) => {
-  class Role extends Model {}
+  class Role extends Model {
+    static associate(models) {
+      Role.belongsToMany(models.Permission, {
+        through: models.RolePermission,
+        sourceKey: "slug",
+        targetKey: "id",
+        as: "permissions",
+      });
+    }
+  }
   Role.init(
     {
       id: {
