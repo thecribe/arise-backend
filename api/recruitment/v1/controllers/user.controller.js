@@ -151,7 +151,7 @@ export const addUser = async (req, res) => {
           transaction: t,
         },
       );
-
+      console.log({ emailJob });
       await t.commit();
 
       setImmediate(() => {

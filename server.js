@@ -2,6 +2,7 @@
 
 import app from "./app.js";
 import db, { initDb, monitorDbConnection } from "./models/index.js";
+import "./api/recruitment/v1/utils/consoleLogger.js";
 
 const PORT = process.env.PORT || 5000;
 

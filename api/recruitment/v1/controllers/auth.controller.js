@@ -226,7 +226,6 @@ export const credentialAuth = async (req, res) => {
       where: { email: email.trim().toLowerCase() },
     });
 
-    console.log({ user });
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }

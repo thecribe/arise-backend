@@ -1,0 +1,130 @@
+[2026-06-26T19:51:31.736Z] LOG: [dotenv@17.3.1] injecting env (9) from .env [2m-- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit[0m
+[2026-06-26T19:51:31.836Z] LOG: [dotenv@17.3.1] injecting env (0) from .env [2m-- tip: 🤖 agentic secret storage: https://dotenvx.com/as2[0m
+[2026-06-26T19:51:32.047Z] LOG: Attempting DB connection...
+[2026-06-26T19:51:32.131Z] LOG: ✅ Database connected successfully
+[2026-06-26T19:51:32.131Z] LOG: DB connected
+[2026-06-26T19:51:32.135Z] LOG: Server running on port 5000
+[2026-06-26T20:33:00.662Z] LOG: [dotenv@17.3.1] injecting env (9) from .env [2m-- tip: ⚙️  enable debug logging with { debug: true }[0m
+[2026-06-26T20:33:00.753Z] LOG: [dotenv@17.3.1] injecting env (0) from .env [2m-- tip: ⚡️ secrets for agents: https://dotenvx.com/as2[0m
+[2026-06-26T20:33:00.943Z] LOG: Attempting DB connection...
+[2026-06-26T20:33:01.028Z] LOG: ✅ Database connected successfully
+[2026-06-26T20:33:01.028Z] LOG: DB connected
+[2026-06-26T20:33:01.031Z] LOG: Server running on port 5000
+[2026-06-26T20:33:04.898Z] LOG: EmailQueues {
+  dataValues: {
+    status: 'pending',
+    attempts: 0,
+    id: 4,
+    type: 'reset-password',
+    payload: {
+      email: 'lawaloluwatobi128@gmail.com',
+      firstName: 'Admin',
+      resetPasswordToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI4NmRlOTA1ZC0yNjM0LTRjZWEtOWJmMS0wYzA4OGZmMzRkNzkiLCJlbWFpbCI6Imxhd2Fsb2x1d2F0b2JpMTI4QGdtYWlsLmNvbSIsImlhdCI6MTc4MjUwNTk4NCwiZXhwIjoxNzgyNTA3Nzg0fQ.GdcKlOA36xDFhyjbvdt7rOVzGJirs3dZuftOIMepuZI'
+    },
+    updatedAt: 2026-06-26T20:33:04.880Z,
+    createdAt: 2026-06-26T20:33:04.880Z
+  },
+  _previousDataValues: {
+    type: 'reset-password',
+    payload: {
+      email: 'lawaloluwatobi128@gmail.com',
+      firstName: 'Admin',
+      resetPasswordToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI4NmRlOTA1ZC0yNjM0LTRjZWEtOWJmMS0wYzA4OGZmMzRkNzkiLCJlbWFpbCI6Imxhd2Fsb2x1d2F0b2JpMTI4QGdtYWlsLmNvbSIsImlhdCI6MTc4MjUwNTk4NCwiZXhwIjoxNzgyNTA3Nzg0fQ.GdcKlOA36xDFhyjbvdt7rOVzGJirs3dZuftOIMepuZI'
+    },
+    id: 4,
+    status: 'pending',
+    attempts: 0,
+    error: undefined,
+    processedAt: undefined,
+    createdAt: 2026-06-26T20:33:04.880Z,
+    updatedAt: 2026-06-26T20:33:04.880Z
+  },
+  uniqno: 1,
+  _changed: Set(0) {},
+  _options: {
+    isNewRecord: true,
+    _schema: null,
+    _schemaDelimiter: '',
+    attributes: undefined,
+    include: undefined,
+    raw: undefined,
+    silent: undefined
+  },
+  isNewRecord: false
+}
+[2026-06-26T20:35:53.889Z] LOG: [dotenv@17.3.1] injecting env (9) from .env [2m-- tip: 🛡️ auth for agents: https://vestauth.com[0m
+[2026-06-26T20:35:53.982Z] LOG: [dotenv@17.3.1] injecting env (0) from .env [2m-- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com[0m
+[2026-06-26T20:35:54.168Z] LOG: Attempting DB connection...
+[2026-06-26T20:35:54.228Z] LOG: ✅ Database connected successfully
+[2026-06-26T20:35:54.229Z] LOG: DB connected
+[2026-06-26T20:35:54.232Z] LOG: Server running on port 5000
+[2026-06-26T21:17:08.330Z] LOG: {
+  user: User {
+    dataValues: {
+      id: 'b397e6ce-797d-4842-b447-78871fd2dc46',
+      firstName: 'arise',
+      lastName: 'Nursing',
+      email: 'tobi@arisenursing.co.uk',
+      emailVerified: true,
+      phone: '08103862584',
+      password: '$2b$10$JzVxr5IF5lhmYDf8NYJ5Q.T.YII4GwrLFsxj6buH2MWwl3b49RpYO',
+      roleSlug: 'applicant',
+      departmentSlug: 'uncategorised',
+      jobTypeSlug: 'uncategorised',
+      address: 'No. 3, Omotosho Street, Gof Area, Ogooluwa Area, Osogbo',
+      profileImage: null,
+      createdAt: 2026-06-26T21:14:34.000Z,
+      updatedAt: 2026-06-26T21:16:59.000Z
+    },
+    _previousDataValues: {
+      id: 'b397e6ce-797d-4842-b447-78871fd2dc46',
+      firstName: 'arise',
+      lastName: 'Nursing',
+      email: 'tobi@arisenursing.co.uk',
+      emailVerified: true,
+      phone: '08103862584',
+      password: '$2b$10$JzVxr5IF5lhmYDf8NYJ5Q.T.YII4GwrLFsxj6buH2MWwl3b49RpYO',
+      roleSlug: 'applicant',
+      departmentSlug: 'uncategorised',
+      jobTypeSlug: 'uncategorised',
+      address: 'No. 3, Omotosho Street, Gof Area, Ogooluwa Area, Osogbo',
+      profileImage: null,
+      createdAt: 2026-06-26T21:14:34.000Z,
+      updatedAt: 2026-06-26T21:16:59.000Z
+    },
+    uniqno: 1,
+    _changed: Set(0) {},
+    _options: {
+      isNewRecord: false,
+      _schema: null,
+      _schemaDelimiter: '',
+      raw: true,
+      attributes: [Array]
+    },
+    isNewRecord: false
+  }
+}
+[2026-06-26T21:18:30.579Z] LOG: [dotenv@17.3.1] injecting env (9) from .env [2m-- tip: ⚙️  enable debug logging with { debug: true }[0m
+[2026-06-26T21:18:30.686Z] LOG: [dotenv@17.3.1] injecting env (0) from .env [2m-- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild[0m
+[2026-06-26T21:18:30.975Z] LOG: Attempting DB connection...
+[2026-06-26T21:18:31.026Z] LOG: ✅ Database connected successfully
+[2026-06-26T21:18:31.026Z] LOG: DB connected
+[2026-06-26T21:18:31.029Z] LOG: Server running on port 5000
+[2026-06-26T21:19:12.176Z] LOG: [dotenv@17.3.1] injecting env (9) from .env [2m-- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }[0m
+[2026-06-26T21:19:12.304Z] LOG: [dotenv@17.3.1] injecting env (0) from .env [2m-- tip: ⚙️  override existing env vars with { override: true }[0m
+[2026-06-26T21:19:12.492Z] LOG: Attempting DB connection...
+[2026-06-26T21:19:12.559Z] LOG: ✅ Database connected successfully
+[2026-06-26T21:19:12.560Z] LOG: DB connected
+[2026-06-26T21:19:12.563Z] LOG: Server running on port 5000
+[2026-06-26T21:19:23.505Z] LOG: [dotenv@17.3.1] injecting env (9) from .env [2m-- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild[0m
+[2026-06-26T21:19:23.653Z] LOG: [dotenv@17.3.1] injecting env (0) from .env [2m-- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`[0m
+[2026-06-26T21:19:23.883Z] LOG: Attempting DB connection...
+[2026-06-26T21:19:23.940Z] LOG: ✅ Database connected successfully
+[2026-06-26T21:19:23.941Z] LOG: DB connected
+[2026-06-26T21:19:23.945Z] LOG: Server running on port 5000
+[2026-06-26T21:19:46.222Z] LOG: [dotenv@17.3.1] injecting env (9) from .env [2m-- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }[0m
+[2026-06-26T21:19:46.599Z] LOG: Attempting DB connection...
+[2026-06-26T21:19:46.685Z] LOG: ✅ Database connected successfully
+[2026-06-26T21:19:46.685Z] LOG: DB connected
+[2026-06-26T21:19:46.690Z] LOG: Server running on port 5000
+[2026-06-26T21:20:18.522Z] LOG: Closing DB...
