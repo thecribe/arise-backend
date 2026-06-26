@@ -11,15 +11,21 @@ export const processSingleEmailJob = async (job) => {
       status: "processing",
     });
 
+    let payload = null;
+    if (typeof payload === "string") {
+      payload = JSON.parse(job.payload);
+    }
+
+    console.log({ payload });
     switch (job.type) {
       case "verify-email":
-        await sendEmailVerification(job.payload);
+        await sendEmailVerification(payload ? payload : job.payload);
         break;
       case "reset-password":
-        await sendResetPasswordLink(job.payload);
+        await sendResetPasswordLink(payload ? payload : job.payload);
         break;
       case "reference":
-        await sendRefereeEmail(job.payload);
+        await sendRefereeEmail(payload ? payload : job.payload);
         break;
 
       default:
