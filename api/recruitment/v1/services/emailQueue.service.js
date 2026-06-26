@@ -12,7 +12,7 @@ export const processSingleEmailJob = async (job) => {
     });
 
     let payload = null;
-    if (typeof payload === "string") {
+    if (typeof job.payload === "string") {
       payload = JSON.parse(job.payload);
     }
 
