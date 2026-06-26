@@ -15,11 +15,11 @@ const PORT = process.env.PORT || 5000;
       console.log(`Server running on port ${PORT}`);
     });
 
-    setInterval(() => {
-      server.getConnections((err, count) => {
-        console.log("HTTP Connections:", count);
-      });
-    }, 5000);
+    // setInterval(() => {
+    //   server.getConnections((err, count) => {
+    //     console.log("HTTP Connections:", count);
+    //   });
+    // }, 5000);
     // monitorDbConnection();
   } catch (error) {
     console.error("DB error:", error);
