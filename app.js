@@ -33,6 +33,20 @@ const allowedOrigins = [
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+app.use((req, res, next) => {
+  const start = Date.now();
+
+  console.log(`[START] ${req.ip} ${req.method} ${req.originalUrl}`);
+
+  res.on("finish", () => {
+    console.log(
+      `[END] ${req.ip} ${req.method} ${req.originalUrl} ${res.statusCode} (${Date.now() - start}ms)`,
+    );
+  });
+
+  next();
+});
+
 app.use(express.json());
 
 app.set("trust proxy", true);
