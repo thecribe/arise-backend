@@ -61,6 +61,7 @@ export const sendAuthenticationLink = async (payload) => {
 };
 
 export const sendResetPasswordLink = async (payload) => {
+  console.log({ payload, where: "sendresetpasswordlink" });
   const resetLink = `${process.env.FRONTENDURL}/reset-password?token=${payload.resetPasswordToken}`;
   return await resend.emails.send({
     from: "Support <info@developer.cribe.org>",

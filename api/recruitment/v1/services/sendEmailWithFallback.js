@@ -5,6 +5,7 @@ export const sendEmailWithFallback = async (emailJobId) => {
   try {
     const job = await db.EmailQueues.findByPk(emailJobId);
 
+    console.log({ emailJobId, job, where: "sendEmailWIth" });
     if (!job) return;
 
     await processSingleEmailJob(job);
