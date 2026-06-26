@@ -97,20 +97,24 @@ db.Sequelize = Sequelize;
 /**
  * Graceful Shutdown - VERY IMPORTANT for cPanel / Passenger
  */
+let shuttingDown = false;
+
 const gracefulShutdown = async () => {
-  console.log("🛑 Closing database connection pool...");
+  if (shuttingDown) return;
+  shuttingDown = true;
+
+  console.log("Closing DB...");
+
   try {
     await sequelize.close();
-    console.log("✅ Database connection closed successfully");
   } catch (err) {
-    console.error("Error while closing database:", err.message);
+    console.error(err);
   }
+
   process.exit(0);
 };
 
-// Listen for shutdown signals from cPanel / Phusion Passenger
 process.on("SIGTERM", gracefulShutdown);
 process.on("SIGINT", gracefulShutdown);
-process.on("beforeExit", gracefulShutdown);
 
 export default db;
