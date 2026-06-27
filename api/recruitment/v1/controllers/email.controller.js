@@ -259,7 +259,7 @@ export const sendReferenceEmail = async (req, res) => {
     /**
      * Create Email Queue Job
      */
-    const emailJob = await db.EmailQueue.create(
+    const emailJob = await db.EmailQueues.create(
       {
         type: "reference",
 
