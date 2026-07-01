@@ -148,7 +148,6 @@ export const userResetPasswordEmail = async (req, res) => {
       },
     );
 
-    console.log(emailJob);
     await t.commit();
 
     setImmediate(() => {
