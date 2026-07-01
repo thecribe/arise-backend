@@ -14,3 +14,4 @@
 .env
 
 /public/static
+logs/
