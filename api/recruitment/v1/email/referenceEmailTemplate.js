@@ -59,7 +59,7 @@ export function createReferenceEmailHTML({
       .button {
         display: inline-block;
         background-color: #2563eb;
-        color: #ffffff;
+        color: #ffffff !important;
         padding: 16px 32px;
         font-size: 16px;
         font-weight: 600;
