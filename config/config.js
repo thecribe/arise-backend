@@ -1,9 +1,9 @@
 import mysql2 from "mysql2";
 // 👇 Load dotenv ONLY in development
-// if (process.env.NODE_ENV !== "production") {
-//   const dotenv = await import("dotenv");
-//   dotenv.config({ path: ".env" });
-// }
+if (process.env.NODE_ENV !== "production") {
+  const dotenv = await import("dotenv");
+  dotenv.config({ path: ".env" });
+}
 
 const config = {
   development: {
